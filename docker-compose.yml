@@ -1,0 +1,34 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment: {POSTGRES_DB: dpw_fms, POSTGRES_USER: dpwfms, POSTGRES_PASSWORD: dpwfms-local}
+    volumes: [postgres-data:/var/lib/postgresql/data]
+    networks: [backend]
+    healthcheck: {test: [CMD-SHELL, pg_isready -U dpwfms -d dpw_fms], interval: 5s, timeout: 3s, retries: 20}
+  redis:
+    image: redis:7.4-alpine
+    command: redis-server --appendonly yes
+    networks: [backend]
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    environment: {RABBITMQ_DEFAULT_USER: dpwfms, RABBITMQ_DEFAULT_PASS: dpwfms-local}
+    ports: ["127.0.0.1:15672:15672"]
+    networks: [backend]
+  mosquitto:
+    image: eclipse-mosquitto:2
+    volumes: [./deploy/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro]
+    ports: ["127.0.0.1:1883:1883"]
+    networks: [backend]
+  api:
+    build: .
+    environment: {DB_URL: jdbc:postgresql://postgres:5432/dpw_fms, DB_USER: dpwfms, DB_PASSWORD: dpwfms-local, REDIS_HOST: redis, RABBITMQ_HOST: rabbitmq, RABBITMQ_USER: dpwfms, RABBITMQ_PASSWORD: dpwfms-local, DPWFMS_LOCAL_PASSWORD: change-me-local-only}
+    depends_on: {postgres: {condition: service_healthy}}
+    ports: ["127.0.0.1:8080:8080"]
+    networks: [backend, frontend]
+  web:
+    build: ./fms-web
+    depends_on: [api]
+    ports: ["3000:80"]
+    networks: [frontend]
+networks: {backend: {internal: true}, frontend: {}}
+volumes: {postgres-data: {}}
