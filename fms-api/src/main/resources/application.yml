@@ -1,0 +1,27 @@
+spring:
+  application.name: dpw-fms
+  lifecycle.timeout-per-shutdown-phase: 30s
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/dpw_fms}
+    username: ${DB_USER:dpwfms}
+    password: ${DB_PASSWORD:dpwfms-local}
+    hikari.maximum-pool-size: ${DB_POOL_SIZE:20}
+  jpa:
+    open-in-view: false
+    hibernate.ddl-auto: validate
+  data.redis.host: ${REDIS_HOST:localhost}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    username: ${RABBITMQ_USER:dpwfms}
+    password: ${RABBITMQ_PASSWORD:dpwfms-local}
+server:
+  port: 8080
+  shutdown: graceful
+management:
+  endpoints.web.exposure.include: health,info,prometheus,metrics
+  endpoint.health.probes.enabled: true
+springdoc.swagger-ui.path: /swagger-ui.html
+dpwfms:
+  telemetry.freshness-seconds: ${TELEMETRY_FRESHNESS_SECONDS:60}
+  dispatch.ack-timeout-seconds: ${DISPATCH_ACK_TIMEOUT_SECONDS:15}
+  cors.allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
