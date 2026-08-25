@@ -18,7 +18,7 @@ class AutomationMigrationIntegrationTest {
   @Test void migratesVersionedAutomationRulesAndUniquenessGuards() throws Exception {
     Flyway flyway = Flyway.configure().dataSource(postgres.getJdbcUrl(), postgres.getUsername(),
         postgres.getPassword()).load();
-    assertEquals(4, flyway.migrate().migrationsExecuted);
+    assertEquals(5, flyway.migrate().migrationsExecuted);
     try (var connection = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
          var statement = connection.createStatement()) {
       try (var rules = statement.executeQuery("SELECT count(*) FROM automation_rules")) {

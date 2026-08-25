@@ -6,6 +6,8 @@ Automatic parking and fueling now use a versioned deterministic rule engine with
 
 The administration workspace supports database-backed user creation with BCrypt credentials, role and plant assignments, protected Super Admin safeguards, and frontend map-provider configuration. The overview reports total fleet, fleet in operation, fueling stations, charging stations, orders, and alerts directly from PostgreSQL.
 
+The visible application navigation is intentionally limited to implemented workspaces. Vehicle markers come from accepted, deduplicated PostgreSQL telemetry rather than browser simulation; submit normalized positions through the authorized telemetry API described in `docs/integrations.md`.
+
 ## Repository assessment and architecture
 
 The repository was initially empty apart from Git metadata. It is now a Java 21 Maven reactor whose domain and engines have no dependency on Spring or transport protocols. Adapters point inward through application contracts; `fms-api` is the composition root. See [architecture and phased gaps](docs/architecture.md).

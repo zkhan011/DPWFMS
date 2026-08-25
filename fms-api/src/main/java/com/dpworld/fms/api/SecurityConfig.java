@@ -60,10 +60,11 @@ public class SecurityConfig {
     }
     String bootstrapHash = encoder.encode(password);
     return requestedUsername -> {
-      var users = jdbc.queryForList("SELECT id,username,password_hash,enabled FROM users WHERE lower(username)=lower(?)", requestedUsername);
+      var users = jdbc.queryForList("SELECT id,username,password_hash,enabled,service_account FROM users WHERE lower(username)=lower(?)", requestedUsername);
       if (!users.isEmpty()) {
         var row = users.getFirst();
-        if (!Boolean.TRUE.equals(row.get("enabled")) || row.get("password_hash") == null) {
+        if (!Boolean.TRUE.equals(row.get("enabled")) || Boolean.TRUE.equals(row.get("service_account"))
+            || row.get("password_hash") == null) {
           throw new UsernameNotFoundException("user is disabled or has no interactive credential");
         }
         var authorities = jdbc.queryForList("""

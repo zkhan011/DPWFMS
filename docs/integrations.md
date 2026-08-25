@@ -25,3 +25,11 @@ Durable topic exchange `dpwfms.business.v1` routes `asset.position.updated`, `as
 ```
 
 Never connect browsers to either broker. Sanitized state reaches the UI only over authenticated REST/SSE.
+
+## Persisted telemetry and map display
+
+MQTT/TrackIT adapters and authorized integration clients should submit normalized positions to `POST /api/telemetry/assets/{assetId}/position`. The inbox rejects duplicate `messageId` values and out-of-order timestamps before updating the asset's current position. Accepted points are appended to `asset_positions`; the Map and Vehicles screens read this persisted current state and refresh every five seconds.
+
+```json
+{"messageId":"pos-ITV-001-1701","schemaVersion":"1.0","correlationId":"trackit-1701","occurredAt":"2026-08-25T08:30:00Z","fleetNumber":"ITV-001","assetType":"ITV","plantCode":"JEA","latitude":24.9857,"longitude":55.0273,"heading":90,"speedKph":18.5,"energyPercent":72,"operationalStatus":"WORKING","availabilityStatus":"ASSIGNED","deviceId":"DEV-001","trackItId":"TRK-001"}
+```

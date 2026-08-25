@@ -101,23 +101,31 @@ public class WorkspaceController {
   public List<Map<String, Object>> vehicles(@RequestParam(required = false) UUID plantId, Authentication authentication) {
     String sql = """
         SELECT a.id, a.fleet_number, t.code AS asset_type, p.name AS plant,
-               a.latitude, a.longitude, a.operational_status, a.availability_status,
+               a.latitude, a.longitude, a.heading, a.speed_kph, a.operational_status, a.availability_status,
                a.energy_percent, a.current_job_id, a.driver_id, a.last_telemetry_at, a.enabled
           FROM assets a JOIN asset_types t ON t.id=a.asset_type_id
           LEFT JOIN plants p ON p.id=a.plant_id
         """;
-    requirePlantAccess(authentication, plantId);
-    return plantId == null ? jdbc.queryForList(sql + " ORDER BY a.fleet_number")
-        : jdbc.queryForList(sql + " WHERE a.plant_id=? ORDER BY a.fleet_number", plantId);
+    if (plantId != null) {
+      requirePlantAccess(authentication, plantId);
+      return jdbc.queryForList(sql + " WHERE a.plant_id=? ORDER BY a.fleet_number", plantId);
+    }
+    if (hasAuthority(authentication, "system.configure")) return jdbc.queryForList(sql + " ORDER BY a.fleet_number");
+    return jdbc.queryForList(sql + " WHERE a.plant_id IN (SELECT upa.plant_id FROM user_plant_assignments upa JOIN users u ON u.id=upa.user_id WHERE u.username=? OR u.subject=?) ORDER BY a.fleet_number",
+        authentication.getName(), authentication.getName());
   }
 
   @GetMapping("/orders")
   @PreAuthorize("hasAuthority('order.read')")
   public List<Map<String, Object>> orders(@RequestParam(required = false) UUID plantId, Authentication authentication) {
     String sql = "SELECT o.*, p.name AS plant FROM transport_orders o JOIN plants p ON p.id=o.plant_id";
-    requirePlantAccess(authentication, plantId);
-    return plantId == null ? jdbc.queryForList(sql + " ORDER BY o.created_at DESC LIMIT 500")
-        : jdbc.queryForList(sql + " WHERE o.plant_id=? ORDER BY o.created_at DESC LIMIT 500", plantId);
+    if (plantId != null) {
+      requirePlantAccess(authentication, plantId);
+      return jdbc.queryForList(sql + " WHERE o.plant_id=? ORDER BY o.created_at DESC LIMIT 500", plantId);
+    }
+    if (hasAuthority(authentication, "system.configure")) return jdbc.queryForList(sql + " ORDER BY o.created_at DESC LIMIT 500");
+    return jdbc.queryForList(sql + " WHERE o.plant_id IN (SELECT upa.plant_id FROM user_plant_assignments upa JOIN users u ON u.id=upa.user_id WHERE u.username=? OR u.subject=?) ORDER BY o.created_at DESC LIMIT 500",
+        authentication.getName(), authentication.getName());
   }
 
   @GetMapping("/map-configuration")

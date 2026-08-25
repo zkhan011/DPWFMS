@@ -9,16 +9,11 @@ const Overview = lazy(() => import('./pages/OverviewPage'));
 const Plant = lazy(() => import('./pages/PlantPage'));
 const MapPage = lazy(() => import('./pages/MapPage'));
 const Vehicles = lazy(() => import('./pages/VehiclesPage'));
-const Orders = lazy(() => import('./pages/OrdersPage'));
-const Operations = lazy(() => import('./pages/OperationsPage'));
-const Automation = lazy(() => import('./AutomationAdmin'));
 const ControlCenter = lazy(() => import('./pages/ControlCenterPage'));
 const Administration = lazy(() => import('./pages/AdministrationPage'));
 
 const routes: Record<string, React.LazyExoticComponent<() => React.ReactElement>> = {
-  overview: Overview, plant: Plant, map: MapPage, vehicles: Vehicles, orders: Orders,
-  jobs: Operations, scheduling: Operations, dispatch: Operations, fueling: Automation,
-  parking: Automation, charging: Automation, alerts: Operations, reports: Operations,
+  overview: Overview, plant: Plant, map: MapPage, vehicles: Vehicles,
   'control-center': ControlCenter, administration: Administration
 };
 
