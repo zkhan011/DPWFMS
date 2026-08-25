@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react';
+import { api } from './api/client';
 
 type Rule = { id:string; code:string; name:string; kind:'PARKING'|'FUELING'; scopeType:string; enabled:boolean; priority:number; version:number; thresholds:Record<string,number>; weights:Record<string,number> };
 type Decision = { id:string; assetId:string; evaluatedAt:string; selectedAction:string; selectedResourceId?:string; eligible:boolean; jobCreated:boolean; blockingReasons:string[]; candidates:{resourceId:string;totalScore:number;eligible:boolean;rejectionReasons:string[]}[] };
 type Reservation = { id:string; resourceType:string; resourceId:string; assetId:string; expiresAt:string };
 type Alert = { id:string; code:string; severity:string; message:string; lastRaisedAt:string };
-const auth = {Authorization:'Basic '+btoa('operator:change-me-local-only')};
 
 export default function AutomationAdmin(){
   const [rules,setRules]=useState<Rule[]>([]),[decisions,setDecisions]=useState<Decision[]>([]),[reservations,setReservations]=useState<Reservation[]>([]),[alerts,setAlerts]=useState<Alert[]>([]),[section,setSection]=useState('rules');
   const refresh=()=>Promise.all([
-    fetch('/api/automation/rules',{headers:auth}).then(r=>r.json()),
-    fetch('/api/automation/decisions',{headers:auth}).then(r=>r.json()),
-    fetch('/api/automation/reservations',{headers:auth}).then(r=>r.json()),
-    fetch('/api/automation/alerts',{headers:auth}).then(r=>r.json())
+    api<Rule[]>('/api/automation/rules'),
+    api<Decision[]>('/api/automation/decisions'),
+    api<Reservation[]>('/api/automation/reservations'),
+    api<Alert[]>('/api/automation/alerts')
   ]).then(([r,d,v,a])=>{setRules(r);setDecisions(d);setReservations(v);setAlerts(a)}).catch(console.error);
   useEffect(()=>{refresh();const timer=setInterval(refresh,10000);return()=>clearInterval(timer)},[]);
   return <section className="admin-page">

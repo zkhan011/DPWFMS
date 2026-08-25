@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /** Composition-root adapter used by REST, scheduled reconciliation, and event consumers. */
@@ -29,15 +30,18 @@ public class AutomationRuntime {
   private final AutomaticJobEngine engine;
   private final AutomationDecisionStore decisionStore;
 
-  public AutomationRuntime(AutomationRuleStore store, AutomationDecisionStore decisionStore) {
+  public AutomationRuntime(AutomationRuleStore store, AutomationDecisionStore decisionStore,
+                           @Value("${dpwfms.development.simulator-enabled:false}") boolean simulatorEnabled) {
     Instant now = Instant.now();
     this.decisionStore = decisionStore;
     rules = RuleConfigurationService.withDefaults(now);
     List<AutomationRule> persisted = store.findAll();
     if (!persisted.isEmpty()) rules.replaceAll(persisted);
-    for (int i = 1; i <= 10; i++) {
-      UUID id = UUID.nameUUIDFromBytes(("automation-asset-" + i).getBytes());
-      assets.put(id, snapshot(id, i == 2 ? 16 : i == 3 ? 8 : 60, now));
+    if (simulatorEnabled) {
+      for (int i = 1; i <= 10; i++) {
+        UUID id = UUID.nameUUIDFromBytes(("automation-asset-" + i).getBytes());
+        assets.put(id, snapshot(id, i == 2 ? 16 : i == 3 ? 8 : 60, now));
+      }
     }
     parkingSpaces = java.util.stream.IntStream.rangeClosed(1, 30).mapToObj(i ->
         new ParkingSpace("P-%02d".formatted(i), "P_NODE_%02d".formatted(i), "YARD-A", true,

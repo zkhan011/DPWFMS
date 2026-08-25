@@ -27,23 +27,23 @@ Stale telemetry blocks dispatch and raises a deduplicated major alert. Emergency
 
 ```bash
 # Active and historical versions
-curl -u operator:change-me-local-only http://localhost:8080/api/automation/rules
+curl -u "$DPWFMS_LOCAL_USERNAME:$DPWFMS_LOCAL_PASSWORD" http://localhost:8080/api/automation/rules
 
 # Obtain a seeded automation asset, then simulate without side effects
-ASSET=$(curl -su operator:change-me-local-only http://localhost:8080/api/automation/assets | jq -r '.[0]')
-curl -u operator:change-me-local-only -X POST \
+ASSET=$(curl -su "$DPWFMS_LOCAL_USERNAME:$DPWFMS_LOCAL_PASSWORD" http://localhost:8080/api/automation/assets | jq -r '.[0]')
+curl -u "$DPWFMS_LOCAL_USERNAME:$DPWFMS_LOCAL_PASSWORD" -X POST \
   http://localhost:8080/api/automation/decisions/simulate/$ASSET
 
 # Authorized event-driven evaluation/manual triggers
-curl -u operator:change-me-local-only -X POST http://localhost:8080/api/automation/assets/$ASSET/evaluate
-curl -u operator:change-me-local-only -X POST http://localhost:8080/api/automation/assets/$ASSET/parking
-curl -u operator:change-me-local-only -X POST http://localhost:8080/api/automation/assets/$ASSET/fueling
+curl -u "$DPWFMS_LOCAL_USERNAME:$DPWFMS_LOCAL_PASSWORD" -X POST http://localhost:8080/api/automation/assets/$ASSET/evaluate
+curl -u "$DPWFMS_LOCAL_USERNAME:$DPWFMS_LOCAL_PASSWORD" -X POST http://localhost:8080/api/automation/assets/$ASSET/parking
+curl -u "$DPWFMS_LOCAL_USERNAME:$DPWFMS_LOCAL_PASSWORD" -X POST http://localhost:8080/api/automation/assets/$ASSET/fueling
 
 # Operational evidence
-curl -u operator:change-me-local-only http://localhost:8080/api/automation/decisions
-curl -u operator:change-me-local-only http://localhost:8080/api/automation/reservations
-curl -u operator:change-me-local-only http://localhost:8080/api/automation/alerts
-curl -u operator:change-me-local-only http://localhost:8080/api/automation/scenarios
+curl -u "$DPWFMS_LOCAL_USERNAME:$DPWFMS_LOCAL_PASSWORD" http://localhost:8080/api/automation/decisions
+curl -u "$DPWFMS_LOCAL_USERNAME:$DPWFMS_LOCAL_PASSWORD" http://localhost:8080/api/automation/reservations
+curl -u "$DPWFMS_LOCAL_USERNAME:$DPWFMS_LOCAL_PASSWORD" http://localhost:8080/api/automation/alerts
+curl -u "$DPWFMS_LOCAL_USERNAME:$DPWFMS_LOCAL_PASSWORD" http://localhost:8080/api/automation/scenarios
 ```
 
 Rule creation/versioning, activation, exceptional approval, and reservation release require Administrator or Dispatcher authorization as appropriate and generate automation audit events.

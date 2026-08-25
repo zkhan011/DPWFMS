@@ -33,11 +33,11 @@ cd fms-web && npm ci && npm run build
 docker compose up --build
 ```
 
-Open dashboard at <http://localhost:3000>, Swagger at <http://localhost:8080/swagger-ui.html>, health at <http://localhost:8080/actuator/health>, RabbitMQ management at <http://localhost:15672>. Local-only credentials are `operator` / `change-me-local-only`; change them outside development.
+Open dashboard at <http://localhost:3000>, Swagger at <http://localhost:8080/swagger-ui.html>, health at <http://localhost:8080/actuator/health>, RabbitMQ management at <http://localhost:15672>. Local development credentials are supplied through `DPWFMS_LOCAL_USERNAME` and `DPWFMS_LOCAL_PASSWORD`; no credential is committed.
 
 ```bash
-curl -u operator:change-me-local-only http://localhost:8080/api/assets
-curl -u operator:change-me-local-only -H 'Content-Type: application/json' -d '{"type":"CONTAINER_TRANSPORT","priority":80,"source":"QUAY-01","destination":"YARD-03","requiredCapabilities":["TWISTLOCK"]}' http://localhost:8080/api/jobs
+curl -u "$DPWFMS_LOCAL_USERNAME:$DPWFMS_LOCAL_PASSWORD" http://localhost:8080/api/assets
+curl -u "$DPWFMS_LOCAL_USERNAME:$DPWFMS_LOCAL_PASSWORD" -H 'Content-Type: application/json' -d '{"type":"CONTAINER_TRANSPORT","priority":80,"source":"QUAY-01","destination":"YARD-03","requiredCapabilities":["TWISTLOCK"]}' http://localhost:8080/api/jobs
 ```
 
 ## Operational status
