@@ -10,11 +10,14 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -49,15 +52,41 @@ public class SecurityConfig {
   @Bean
   UserDetailsService localDevelopmentUsers(
       @Value("${DPWFMS_LOCAL_USERNAME}") String username,
-      @Value("${DPWFMS_LOCAL_PASSWORD}") String password) {
+      @Value("${DPWFMS_LOCAL_PASSWORD}") String password,
+      JdbcTemplate jdbc,
+      PasswordEncoder encoder) {
     if (password.length() < 12) {
       throw new IllegalStateException("DPWFMS_LOCAL_PASSWORD must contain at least 12 characters");
     }
-    BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-    var authorities = DEVELOPMENT_PERMISSIONS.stream().map(SimpleGrantedAuthority::new).toList();
-    return new InMemoryUserDetailsManager(User.withUsername(username)
-        .password(encoder.encode(password)).authorities(authorities).build());
+    String bootstrapHash = encoder.encode(password);
+    return requestedUsername -> {
+      var users = jdbc.queryForList("SELECT id,username,password_hash,enabled FROM users WHERE lower(username)=lower(?)", requestedUsername);
+      if (!users.isEmpty()) {
+        var row = users.getFirst();
+        if (!Boolean.TRUE.equals(row.get("enabled")) || row.get("password_hash") == null) {
+          throw new UsernameNotFoundException("user is disabled or has no interactive credential");
+        }
+        var authorities = jdbc.queryForList("""
+            SELECT DISTINCT authority FROM (
+              SELECT p.code AS authority FROM user_roles ur JOIN role_permissions rp ON rp.role_id=ur.role_id
+              JOIN permissions p ON p.id=rp.permission_id WHERE ur.user_id=?
+              UNION ALL
+              SELECT 'ROLE_' || r.name AS authority FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=?
+            ) granted ORDER BY authority
+            """, String.class, row.get("id"), row.get("id")).stream().map(SimpleGrantedAuthority::new).toList();
+        return User.withUsername(String.valueOf(row.get("username")))
+            .password(String.valueOf(row.get("password_hash"))).authorities(authorities)
+            .disabled(false).build();
+      }
+      if (!username.equalsIgnoreCase(requestedUsername)) throw new UsernameNotFoundException("unknown user");
+      var authorities = new java.util.ArrayList<GrantedAuthority>();
+      DEVELOPMENT_PERMISSIONS.stream().map(SimpleGrantedAuthority::new).forEach(authorities::add);
+      authorities.add(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"));
+      return User.withUsername(username).password(bootstrapHash).authorities(authorities).build();
+    };
   }
+
+  @Bean PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
 
   @Bean
   CorsConfigurationSource corsConfigurationSource(

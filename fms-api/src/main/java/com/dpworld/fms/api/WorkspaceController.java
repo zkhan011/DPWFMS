@@ -3,6 +3,7 @@ package com.dpworld.fms.api;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
@@ -27,7 +28,10 @@ public class WorkspaceController {
 
   @GetMapping("/me")
   public Map<String, Object> currentUser(Authentication authentication) {
-    return Map.of("username", authentication.getName(), "role", "LOCAL_DEVELOPMENT",
+    String role = authentication.getAuthorities().stream().map(Object::toString)
+        .filter(authority -> authority.startsWith("ROLE_")).map(authority -> authority.substring(5))
+        .findFirst().orElse("CUSTOM_ROLE");
+    return Map.of("username", authentication.getName(), "role", role,
         "permissions", authentication.getAuthorities().stream().map(Object::toString).sorted().toList());
   }
 
@@ -38,12 +42,16 @@ public class WorkspaceController {
     result.put("kernelStatus", "CONFIGURATION_REQUIRED");
     result.put("operatingMode", "OPERATING");
     result.put("registeredVehicles", count("SELECT count(*) FROM assets"));
+    result.put("totalFleet", count("SELECT count(*) FROM assets"));
+    result.put("fleetInOperation", count("SELECT count(*) FROM assets WHERE enabled AND operational_status IN ('WORKING','FUELLING','CHARGING')"));
     result.put("activeVehicles", count("SELECT count(*) FROM assets WHERE operational_status <> 'OFFLINE' AND enabled"));
     result.put("idleVehicles", count("SELECT count(*) FROM assets WHERE operational_status = 'IDLE' AND enabled"));
     result.put("offlineVehicles", count("SELECT count(*) FROM assets WHERE operational_status = 'OFFLINE'"));
     result.put("activeOrders", count("SELECT count(*) FROM transport_orders WHERE status NOT IN ('COMPLETED','CANCELLED','FAILED')"));
     result.put("failedOrders", count("SELECT count(*) FROM transport_orders WHERE status = 'FAILED'"));
     result.put("activeAlerts", count("SELECT count(*) FROM alerts WHERE acknowledged_at IS NULL"));
+    result.put("fuelStations", count("SELECT count(*) FROM service_stations WHERE station_type IN ('FUELING','FUEL')"));
+    result.put("chargingStations", count("SELECT count(*) FROM service_stations WHERE station_type IN ('CHARGING','CHARGE')"));
     result.put("totalDistanceKm", decimal("SELECT coalesce(sum(odometer_km),0) FROM assets"));
     result.put("averageUtilization", 0);
     result.put("generatedAt", Instant.now());
@@ -133,14 +141,34 @@ public class WorkspaceController {
     }
     int changed = jdbc.update("""
         UPDATE map_configurations SET provider=?,default_latitude=?,default_longitude=?,
-          default_zoom=?,tile_url=?,style_url=?,secret_reference=?,visible_layers=?::jsonb,
+          default_zoom=?,tile_url=?,style_url=?,secret_reference=COALESCE(NULLIF(?,''),secret_reference),visible_layers=?::jsonb,
           version=version+1,updated_at=now(),updated_by=? WHERE id=?
         """, request.provider(), request.latitude(), request.longitude(), request.zoom(),
-        request.tileUrl(), request.styleUrl(), request.secretReference(), request.visibleLayersJson(),
+        request.tileUrl(), request.styleUrl(), request.secretReference(), layersJson(request.visibleLayers()),
         actor.getName(), id);
     if (changed != 1) throw new IllegalArgumentException("unknown map configuration " + id);
     audit(actor.getName(), "MAP_CONFIGURATION_UPDATED", id.toString(), request.provider());
     return jdbc.queryForMap("SELECT id,plant_id,provider,default_latitude,default_longitude,default_zoom,tile_url,style_url,visible_layers,enabled,version FROM map_configurations WHERE id=?", id);
+  }
+
+  @PostMapping("/map-configuration/{id}/test")
+  @PreAuthorize("hasAuthority('map.configure')")
+  public Map<String, Object> testMapConfiguration(@PathVariable UUID id, Principal actor) {
+    Map<String, Object> configuration = jdbc.queryForMap("SELECT provider,tile_url,style_url,secret_reference FROM map_configurations WHERE id=?", id);
+    String provider = String.valueOf(configuration.get("provider"));
+    boolean configured = switch (provider) {
+      case "google", "mapbox" -> configuration.get("secret_reference") != null;
+      case "osm" -> true;
+      case "offline" -> configuration.get("tile_url") != null || configuration.get("style_url") != null;
+      default -> false;
+    };
+    String status = configured ? "CONFIGURED" : "MISSING_CONFIGURATION";
+    String message = configured ? "Provider configuration is complete; browser tile access must also succeed"
+        : "Required provider URL or secret reference is missing";
+    jdbc.update("UPDATE map_configurations SET connectivity_status=?,connectivity_checked_at=now(),connectivity_message=? WHERE id=?",
+        status, message, id);
+    audit(actor.getName(), "MAP_CONNECTIVITY_TESTED", id.toString(), status);
+    return Map.of("status", status, "message", message, "checkedAt", Instant.now());
   }
 
   @GetMapping("/control-center")
@@ -173,6 +201,11 @@ public class WorkspaceController {
   }
   private long count(String sql) { return jdbc.queryForObject(sql, Long.class); }
   private Number decimal(String sql) { return jdbc.queryForObject(sql, Number.class); }
+  private String layersJson(List<String> layers) {
+    List<String> allowed = List.of("plants", "vehicles", "parking", "fueling", "charging", "alerts", "geofences", "routes", "trails");
+    if (!allowed.containsAll(layers)) throw new IllegalArgumentException("unsupported map layer");
+    return layers.stream().map(layer -> "\"" + layer + "\"").collect(java.util.stream.Collectors.joining(",", "[", "]"));
+  }
   private void audit(String actor, String action, String resourceId, String after) {
     jdbc.update("INSERT INTO audit_logs(id,occurred_at,actor,action,resource_type,resource_id,after_value) VALUES (?,now(),?,?, 'PLANT',?,CASE WHEN ? IS NULL THEN NULL ELSE jsonb_build_object('value',?) END)",
         UUID.randomUUID(), actor, action, resourceId, after, after);
@@ -185,5 +218,5 @@ public class WorkspaceController {
                                         @NotNull @DecimalMin("-180") @DecimalMax("180") Double longitude,
                                         @NotNull @Min(1) @Max(22) Integer zoom,
                                         String tileUrl, String styleUrl, String secretReference,
-                                        @NotBlank String visibleLayersJson) {}
+                                        @NotEmpty List<String> visibleLayers) {}
 }

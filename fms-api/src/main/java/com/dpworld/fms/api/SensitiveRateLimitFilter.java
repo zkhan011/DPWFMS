@@ -26,6 +26,8 @@ public class SensitiveRateLimitFilter extends OncePerRequestFilter {
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
     return "GET".equals(request.getMethod()) || (!request.getRequestURI().startsWith("/api/automation")
+        && !request.getRequestURI().startsWith("/api/admin")
+        && !request.getRequestURI().startsWith("/api/workspace/map-configuration")
         && !request.getRequestURI().startsWith("/api/workspace/plants"));
   }
 

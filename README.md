@@ -4,6 +4,8 @@ DPW FMS is an original fleet orchestration platform for terminal vehicles, truck
 
 Automatic parking and fueling now use a versioned deterministic rule engine with scope precedence, fuel hysteresis, candidate scoring, atomic reservations, idempotency keys, decision/audit history, REST administration, scheduled reconciliation, simulator scenarios, and an Automation dashboard. See [automatic parking and fueling](docs/automation.md).
 
+The administration workspace supports database-backed user creation with BCrypt credentials, role and plant assignments, protected Super Admin safeguards, and frontend map-provider configuration. The overview reports total fleet, fleet in operation, fueling stations, charging stations, orders, and alerts directly from PostgreSQL.
+
 ## Repository assessment and architecture
 
 The repository was initially empty apart from Git metadata. It is now a Java 21 Maven reactor whose domain and engines have no dependency on Spring or transport protocols. Adapters point inward through application contracts; `fms-api` is the composition root. See [architecture and phased gaps](docs/architecture.md).

@@ -12,4 +12,4 @@ DPW FMS separates operational layers from the provider adapter. `MapProvider` se
 | `OFFLINE_STYLE_URL` | `/maps/style.json` |
 | defaults | Jebel Ali `24.9857,55.0273`, zoom `12` |
 
-Provider settings are stored in `map_configurations`. Secret values are represented only by secret-manager references and are not returned by the API. Use Administration → Map providers to register configuration, then Test connectivity. See [offline maps](OFFLINE_MAP_SETUP.md) and [Google](GOOGLE_MAPS_SETUP.md).
+Provider settings are stored in `map_configurations`. Secret values are represented only by secret-manager references and are not returned by the API. Open **Administration → Map provider** to change the provider, center, zoom, XYZ/style URLs, visible layers, and secret-manager reference. **Test configuration** validates that all required values are present; reopening the Map view applies saved values. See [offline maps](OFFLINE_MAP_SETUP.md) and [Google](GOOGLE_MAPS_SETUP.md).
