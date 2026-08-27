@@ -2,6 +2,7 @@ package com.dpworld.fms.api;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.UUID;
@@ -44,8 +45,8 @@ public class TelemetryIngestionService {
         WHERE id=? AND (last_telemetry_at IS NULL OR last_telemetry_at < ?)
         """, message.fleetNumber(), assetTypeId, plantId, message.latitude(), message.longitude(),
         message.heading(), message.speedKph(), message.energyPercent(), message.operationalStatus(),
-        message.availabilityStatus(), message.occurredAt(), message.deviceId(), message.trackItId(),
-        assetId, message.occurredAt());
+        message.availabilityStatus(), timestamp(message.occurredAt()), message.deviceId(), message.trackItId(),
+        assetId, timestamp(message.occurredAt()));
     if (updated == 0 && count(assetId) == 0) {
       updated = jdbc.update("""
           INSERT INTO assets(id,fleet_number,asset_type_id,plant_id,operational_status,
@@ -54,7 +55,7 @@ public class TelemetryIngestionService {
           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'SERVICEABLE',TRUE)
           """, assetId, message.fleetNumber(), assetTypeId, plantId, message.operationalStatus(),
           message.availabilityStatus(), message.latitude(), message.longitude(), message.heading(),
-          message.speedKph(), message.energyPercent(), message.occurredAt(), message.deviceId(),
+          message.speedKph(), message.energyPercent(), timestamp(message.occurredAt()), message.deviceId(),
           message.trackItId());
     }
     if (updated == 0) {
@@ -64,13 +65,14 @@ public class TelemetryIngestionService {
     jdbc.update("""
         INSERT INTO asset_positions(asset_id,recorded_at,latitude,longitude,heading,speed_kph)
         VALUES (?,?,?,?,?,?)
-        """, assetId, message.occurredAt(), message.latitude(), message.longitude(),
+        """, assetId, timestamp(message.occurredAt()), message.latitude(), message.longitude(),
         message.heading(), message.speedKph());
     jdbc.update("UPDATE integration_messages SET status='PROCESSED',processed_at=now() WHERE id=?", integrationId);
     return new Result("ACCEPTED", true, assetId, message.occurredAt());
   }
 
   private long count(UUID assetId) { return jdbc.queryForObject("SELECT count(*) FROM assets WHERE id=?", Long.class, assetId); }
+  private Timestamp timestamp(Instant instant) { return instant == null ? null : Timestamp.from(instant); }
   private String hash(TelemetryController.PositionTelemetry message) {
     try {
       MessageDigest digest = MessageDigest.getInstance("SHA-256");

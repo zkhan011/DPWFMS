@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import java.security.Principal;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -79,7 +80,8 @@ public class UserAdministrationController {
           created_at,created_by,updated_at,password_changed_at)
         VALUES (?,?,?,?,?,TRUE,?,?,?,?,?)
         """, id, "local:" + request.username(), request.username(), request.displayName(),
-        passwordEncoder.encode(request.password()), request.serviceAccount(), now, actor.getName(), now, now);
+        passwordEncoder.encode(request.password()), request.serviceAccount(), Timestamp.from(now), actor.getName(),
+        Timestamp.from(now), Timestamp.from(now));
     request.roleIds().forEach(roleId -> jdbc.update("INSERT INTO user_roles(user_id,role_id) VALUES (?,?)", id, roleId));
     request.plantIds().forEach(plantId -> jdbc.update("INSERT INTO user_plant_assignments(user_id,plant_id,assigned_by) VALUES (?,?,?)", id, plantId, actor.getName()));
     audit(actor.getName(), "USER_CREATED", id, Map.of("username", request.username(), "roles", request.roleIds(), "plants", request.plantIds()));

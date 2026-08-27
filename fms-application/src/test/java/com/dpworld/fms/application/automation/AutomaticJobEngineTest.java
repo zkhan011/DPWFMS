@@ -52,7 +52,7 @@ class AutomaticJobEngineTest {
   }
 
   @Test void incompatibleAndUnroutableSpacesAreRejected() {
-    var wrong = new AutomationResource.ParkingSpace("WRONG", "N", "YARD", true,
+    var wrong = new AutomationResource.ParkingSpace("WRONG", "N-1", "YARD-A", true,
         ResourceState.AVAILABLE, Set.of(AssetType.EXTERNAL_TRUCK), 5, 60, 0, 0, 0, 0);
     AutomationDecision result = engine((asset, resource) -> RouteMetrics.invalid("NO_VALID_ROUTE"))
         .evaluate(snapshot(60, now, false, false), List.of(wrong), List.of(), true, "SIMULATION");
@@ -157,7 +157,7 @@ class AutomaticJobEngineTest {
   }
   private RouteMetrics route(double distance, double congestion) { return new RouteMetrics(true, distance, distance / 5, congestion, 0, null); }
   private AutomationResource.ParkingSpace space(String id, double maneuver, double preference) {
-    return new AutomationResource.ParkingSpace(id, "N", "YARD", true, ResourceState.AVAILABLE,
+    return new AutomationResource.ParkingSpace(id, "N-1", "YARD-A", true, ResourceState.AVAILABLE,
         Set.of(AssetType.ITV), 5, 60, 0, maneuver, 0, preference);
   }
   private AutomationResource.FuelingBay bay(String id, String fuel, double queue) {
@@ -165,11 +165,11 @@ class AutomaticJobEngineTest {
         Set.of(AssetType.ITV), 5, 60, fuel, queue > 0 ? 4 : 0, queue, 300, 0, 0);
   }
   private AssetAutomationSnapshot snapshot(double fuel, Instant telemetryAt, boolean activeJob, boolean expected) {
-    return new AssetAutomationSnapshot(UUID.nameUUIDFromBytes("A1".getBytes()), "T", "YARD", AssetType.ITV,
-        "G", true, new GeoPoint(25, 55), "A", telemetryAt, AssetStatus.IDLE,
+    return new AssetAutomationSnapshot(UUID.nameUUIDFromBytes("A1".getBytes()), "T", "YARD-A", AssetType.ITV,
+        "ITV-DAY", true, new GeoPoint(24.995, 55.04), "N-1", telemetryAt, AssetStatus.IDLE,
         MaintenanceStatus.SERVICEABLE, false, false, false, true, true, true, activeJob,
         false, false, expected, null, now.minusSeconds(600), fuel, "DIESEL", fuel * 1000,
-        new VehicleEnvelope(3, 2, 6, 30), Set.of("YARD", "SERVICE"), now);
+        new VehicleEnvelope(3.2, 2.5, 7.0, 35.0), Set.of("YARD-A", "SERVICE"), now);
   }
   private AssetAutomationSnapshot copy(AssetAutomationSnapshot a, Instant evaluated, Instant next, boolean expected) {
     return new AssetAutomationSnapshot(a.assetId(), a.terminalId(), a.zoneId(), a.assetType(), a.assetGroup(),

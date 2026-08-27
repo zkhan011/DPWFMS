@@ -3,6 +3,7 @@ package com.dpworld.fms.api;
 import com.dpworld.fms.application.automation.AutomationDecision;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.sql.Timestamp;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -19,7 +20,7 @@ public class AutomationDecisionStore {
           input_snapshot, rules_evaluated, rules_matched, eligible, blocking_reasons,
           candidate_scores, selected_action, selected_resource_id, job_id, reservation_id)
         VALUES (?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?::jsonb, ?, ?::jsonb, ?::jsonb, ?, ?, ?, ?)
-        """, decision.id(), decision.assetId(), decision.idempotencyKey(), decision.evaluatedAt(),
+        """, decision.id(), decision.assetId(), decision.idempotencyKey(), Timestamp.from(decision.evaluatedAt()),
         String.valueOf(decision.inputSnapshot().get("trigger")), write(decision.inputSnapshot()),
         write(decision.rulesEvaluated()), write(decision.rulesMatched()), decision.eligible(),
         write(decision.blockingReasons()), write(decision.candidates()), decision.selectedAction().name(),

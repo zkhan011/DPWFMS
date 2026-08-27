@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -43,10 +44,10 @@ public class AutomationRuleStore {
           version, created_by, approved_by, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?, ?, ?, ?, ?, ?, ?, ?)
         """, rule.id(), rule.code(), rule.name(), rule.description(), rule.kind().name(),
-        rule.scopeType().name(), rule.scopeId(), rule.enabled(), rule.priority(), rule.effectiveFrom(),
-        rule.effectiveTo(), write(rule.thresholds()), write(rule.weights()), rule.suppressionSeconds(),
+        rule.scopeType().name(), rule.scopeId(), rule.enabled(), rule.priority(), timestamp(rule.effectiveFrom()),
+        timestamp(rule.effectiveTo()), write(rule.thresholds()), write(rule.weights()), rule.suppressionSeconds(),
         rule.cooldownSeconds(), rule.maximumWaitingSeconds(), rule.version(), rule.createdBy(),
-        rule.approvedBy(), rule.createdAt(), Instant.now());
+        rule.approvedBy(), timestamp(rule.createdAt()), timestamp(Instant.now()));
     return rule;
   }
 
@@ -67,6 +68,7 @@ public class AutomationRuleStore {
     var timestamp = rs.getTimestamp(column);
     return timestamp == null ? null : timestamp.toInstant();
   }
+  private Timestamp timestamp(Instant instant) { return instant == null ? null : Timestamp.from(instant); }
   private Map<String, Double> read(String value) {
     try { return json.readValue(value, NUMBER_MAP); }
     catch (JsonProcessingException exception) { throw new IllegalStateException("invalid persisted rule JSON", exception); }

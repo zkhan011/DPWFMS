@@ -11,7 +11,7 @@ class RuleConfigurationServiceTest {
     Instant now = Instant.parse("2026-08-21T12:00:00Z");
     RuleConfigurationService service = RuleConfigurationService.withDefaults(now.minusSeconds(1));
     AssetAutomationSnapshot asset = snapshot(now);
-    service.save(rule("ZONE", AutomationRule.ScopeType.OPERATIONAL_ZONE, "Z", 1, now));
+    service.save(rule("ZONE", AutomationRule.ScopeType.OPERATIONAL_ZONE, "YARD-A", 1, now));
     service.save(rule("ASSET", AutomationRule.ScopeType.ASSET, asset.assetId().toString(), 1, now));
     assertEquals("ASSET", service.resolve(AutomationRule.RuleKind.PARKING, asset, now).orElseThrow().code());
   }
@@ -29,9 +29,9 @@ class RuleConfigurationServiceTest {
         version, "test", "test", now);
   }
   private AssetAutomationSnapshot snapshot(Instant now) {
-    return new AssetAutomationSnapshot(UUID.randomUUID(), "T", "Z", AssetType.ITV, "G", true,
-        new GeoPoint(25,55), "N", now, AssetStatus.IDLE, MaintenanceStatus.SERVICEABLE,
+    return new AssetAutomationSnapshot(UUID.randomUUID(), "T", "YARD-A", AssetType.ITV, "ITV-DAY", true,
+        new GeoPoint(24.995,55.04), "N-1", now, AssetStatus.IDLE, MaintenanceStatus.SERVICEABLE,
         false,false,false,true,true,true,false,false,false,false,null,now.minusSeconds(500),50,
-        "DIESEL",10000,VehicleEnvelope.unrestricted(),Set.of("Z"),now);
+        "DIESEL",10000,new VehicleEnvelope(3.2,2.5,7.0,35.0),Set.of("YARD-A","SERVICE"),now);
   }
 }
