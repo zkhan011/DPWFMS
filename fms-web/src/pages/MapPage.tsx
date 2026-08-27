@@ -1,8 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet.markercluster';
-import 'leaflet.markercluster/dist/MarkerCluster.css';
-import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { api } from '../api/client';
 import { MapConfiguration, MapHandle, resolveProvider } from '../map/provider';
 import { PageHeader } from '../components/ui';
@@ -13,5 +10,6 @@ export default function MapPage(){
   const element=useRef<HTMLDivElement>(null),handleRef=useRef<MapHandle | undefined>(undefined),[provider,setProvider]=useState('Loading'),[vehiclesVisible,setVehiclesVisible]=useState(true),[stale,setStale]=useState(0),[vehicleCount,setVehicleCount]=useState(0),[error,setError]=useState('');
   useEffect(()=>{let active=true,timer:number|undefined;async function refresh(){try{const vehicles=await api<Vehicle[]>('/api/workspace/vehicles');if(!active)return;let old=0;const positions=vehicles.filter(v=>v.latitude!=null&&v.longitude!=null).map(v=>{const isStale=!v.last_telemetry_at||Date.now()-new Date(v.last_telemetry_at).getTime()>60000;if(isStale)old++;return{name:v.fleet_number,latitude:v.latitude!,longitude:v.longitude!,status:v.operational_status,stale:isStale}});setStale(old);setVehicleCount(positions.length);handleRef.current?.setVehicles(positions);setError('')}catch(e){if(active)setError(e instanceof Error?e.message:'Telemetry refresh failed')}}async function start(){try{const config=await api<MapConfiguration>('/api/workspace/map-configuration');if(!active||!element.current)return;const adapter=resolveProvider(config);setProvider(adapter.name);handleRef.current=await adapter.mount(element.current,config);await refresh();timer=window.setInterval(refresh,5000)}catch(e){if(active)setError(e instanceof Error?e.message:'Map could not be started')}}start();return()=>{active=false;if(timer)clearInterval(timer);handleRef.current?.destroy();handleRef.current=undefined}},[]);
   useEffect(()=>handleRef.current?.setVehiclesVisible(vehiclesVisible),[vehiclesVisible]);
+  useEffect(()=>{const resize=()=>handleRef.current?.invalidateSize();window.addEventListener('resize',resize);return()=>window.removeEventListener('resize',resize)},[]);
   return <><PageHeader eyebrow="LIVE TELEMETRY" title="Operational map" description={`${provider} · ${vehicleCount} positioned vehicles · ${stale} stale`} actions={<><a className="button" href="#/administration">Configure map</a><button className="primary" onClick={()=>element.current?.requestFullscreen()}>Full screen ⛶</button></>}/>{error&&<div className="page-state error" role="alert">{error}</div>}<div className="map-layout"><aside className="map-controls"><h2>Live layers</h2><label><input type="checkbox" checked={vehiclesVisible} onChange={event=>setVehiclesVisible(event.target.checked)}/>Vehicles from telemetry</label><hr/><h2>Provider</h2><p>{provider}</p><small>Vehicle positions refresh every five seconds. Stale telemetry is shown in orange.</small></aside><div ref={element} className="operational-map" role="application" aria-label="Fleet operational map"/></div></>;
 }
