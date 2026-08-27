@@ -96,7 +96,7 @@ public class AutomationRuntime {
     return new AssetAutomationSnapshot(id, "JEA", "YARD-A", AssetType.ITV, "ITV-DAY",
         true, new GeoPoint(24.995, 55.04), "N-1", now, AssetStatus.IDLE,
         MaintenanceStatus.SERVICEABLE, false, false, false, true, true, true,
-        false, false, false, false, false, null, now.minusSeconds(900), fuel,
+        false, false, false, false, null, now.minusSeconds(900), fuel,
         "DIESEL", fuel * 1000, new VehicleEnvelope(3.2, 2.5, 7, 35),
         Set.of("YARD-A", "SERVICE"), now);
   }
