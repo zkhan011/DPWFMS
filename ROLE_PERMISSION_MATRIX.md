@@ -14,7 +14,7 @@ The following is the exact default grant matrix seeded by Flyway. Custom roles m
 | CHARGING_OPERATOR | dashboard.read, plant.read, map.read, vehicle.read, charging.read, charging.manage, alert.read, alert.acknowledge |
 | MAINTENANCE_OPERATOR | dashboard.read, plant.read, vehicle.read, vehicle.manage, alert.read, alert.acknowledge |
 | SAFETY_OFFICER | dashboard.read, plant.read, map.read, vehicle.read, alert.read, alert.acknowledge, alert.resolve, report.read, audit.read |
-| REPORT_VIEWER | dashboard.read, plant.read, vehicle.read, order.read, alert.read, report.read, report.export |
+| REPORT_VIEWER | dashboard.read, plant.read, map.read, vehicle.read, order.read, alert.read, report.read, report.export |
 | AUDITOR | dashboard.read, plant.read, integration.read, user.read, role.read, audit.read |
 | API_SERVICE | plant.read, map.read, vehicle.read, vehicle.manage, order.read, order.create, dispatch.read, alert.read, integration.read |
 | DRIVER_OR_VEHICLE_CLIENT | vehicle.read, order.read |
@@ -24,3 +24,29 @@ The complete permission catalog is: dashboard.read, plant.read, plant.manage, ma
 The last enabled SUPER_ADMIN and its protected grants must not be removed. Enterprise DPWUM groups should map to local roles; API_SERVICE accounts are non-interactive.
 
 Users can be created from **Administration → Users & access** by an account with `user.manage`. The backend hashes the submitted password with BCrypt, validates every selected role and plant, denies protected-role assignment without `system.configure`, and writes an audit event. Newly created interactive users can sign in immediately with their database username and password.
+
+## Map access
+
+Opening the map requires `map.read`. Displaying telemetry vehicles additionally requires `vehicle.read`, and non-system users must have a row in `user_plant_assignments` for each visible plant. Editing the provider requires `map.configure`.
+
+To grant map viewing to an existing custom role, run the following as the database owner. This is idempotent:
+
+```sql
+INSERT INTO role_permissions(role_id, permission_id)
+SELECT r.id, p.id FROM roles r CROSS JOIN permissions p
+WHERE r.name = 'YOUR_CUSTOM_ROLE' AND p.code = 'map.read'
+ON CONFLICT DO NOTHING;
+```
+
+Assign a user to Jebel Ali so its vehicles are returned by plant-scoped APIs:
+
+```sql
+INSERT INTO user_plant_assignments(user_id, plant_id, assigned_by)
+SELECT u.id, p.id, 'administrator' FROM users u CROSS JOIN plants p
+WHERE u.username = 'USERNAME' AND p.code = 'JEA'
+ON CONFLICT DO NOTHING;
+```
+
+## Opt-in development users
+
+With the `dev` Spring profile, set `DPWFMS_SAMPLE_USERS_ENABLED=true` and provide `DPWFMS_SAMPLE_USER_PASSWORD` with at least 12 characters. At startup DPW FMS inserts `dispatcher.demo`, `operator.demo`, and `viewer.demo` into PostgreSQL, assigns their standard roles, and grants every enabled plant. Existing accounts are not overwritten. This seeder cannot run under the `prod` profile.

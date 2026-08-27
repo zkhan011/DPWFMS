@@ -18,7 +18,7 @@ class AutomationMigrationIntegrationTest {
   @Test void migratesVersionedAutomationRulesAndUniquenessGuards() throws Exception {
     Flyway flyway = Flyway.configure().dataSource(postgres.getJdbcUrl(), postgres.getUsername(),
         postgres.getPassword()).load();
-    assertEquals(5, flyway.migrate().migrationsExecuted);
+    assertEquals(6, flyway.migrate().migrationsExecuted);
     try (var connection = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
          var statement = connection.createStatement()) {
       try (var rules = statement.executeQuery("SELECT count(*) FROM automation_rules")) {
@@ -28,6 +28,14 @@ class AutomationMigrationIntegrationTest {
       try (var settings = statement.executeQuery("SELECT count(*) FROM scheduler_configuration WHERE config_key LIKE 'automation.%'")) {
         assertTrue(settings.next());
         assertEquals(3, settings.getInt(1));
+      }
+      try (var mapGrant = statement.executeQuery("""
+          SELECT count(*) FROM role_permissions rp
+          JOIN roles r ON r.id=rp.role_id JOIN permissions p ON p.id=rp.permission_id
+          WHERE r.name='REPORT_VIEWER' AND p.code='map.read'
+          """)) {
+        assertTrue(mapGrant.next());
+        assertEquals(1, mapGrant.getInt(1));
       }
     }
   }
