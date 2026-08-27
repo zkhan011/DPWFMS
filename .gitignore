@@ -1,0 +1,14 @@
+target/
+node_modules/
+dist/
+.idea/
+.vscode/
+*.iml
+.env
+*.log
+*.tsbuildinfo
+fms-web/vite.config.js
+fms-web/vite.config.d.ts
+runtime/
+logs/
+.DS_Store
