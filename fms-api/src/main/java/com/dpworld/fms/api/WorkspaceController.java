@@ -88,7 +88,7 @@ public class WorkspaceController {
 
   @PatchMapping("/plants/{id}/enabled")
   @PreAuthorize("hasAuthority('plant.manage')")
-  public void setPlantEnabled(@PathVariable UUID id, @RequestParam boolean value, Authentication authentication) {
+  public void setPlantEnabled(@PathVariable("id") UUID id, @RequestParam("value") boolean value, Authentication authentication) {
     requirePlantAccess(authentication, id);
     if (jdbc.update("UPDATE plants SET enabled=?, status=CASE WHEN ? THEN 'OPERATIONAL' ELSE 'INACTIVE' END, version=version+1, updated_at=now() WHERE id=?", value, value, id) != 1) {
       throw new IllegalArgumentException("unknown plant " + id);
@@ -98,7 +98,7 @@ public class WorkspaceController {
 
   @GetMapping("/vehicles")
   @PreAuthorize("hasAuthority('vehicle.read')")
-  public List<Map<String, Object>> vehicles(@RequestParam(required = false) UUID plantId, Authentication authentication) {
+  public List<Map<String, Object>> vehicles(@RequestParam(name = "plantId", required = false) UUID plantId, Authentication authentication) {
     String sql = """
         SELECT a.id, a.fleet_number, t.code AS asset_type, p.name AS plant,
                a.latitude, a.longitude, a.heading, a.speed_kph, a.operational_status, a.availability_status,
@@ -117,7 +117,7 @@ public class WorkspaceController {
 
   @GetMapping("/orders")
   @PreAuthorize("hasAuthority('order.read')")
-  public List<Map<String, Object>> orders(@RequestParam(required = false) UUID plantId, Authentication authentication) {
+  public List<Map<String, Object>> orders(@RequestParam(name = "plantId", required = false) UUID plantId, Authentication authentication) {
     String sql = "SELECT o.*, p.name AS plant FROM transport_orders o JOIN plants p ON p.id=o.plant_id";
     if (plantId != null) {
       requirePlantAccess(authentication, plantId);
@@ -130,7 +130,7 @@ public class WorkspaceController {
 
   @GetMapping("/map-configuration")
   @PreAuthorize("hasAuthority('map.read')")
-  public Map<String, Object> mapConfiguration(@RequestParam(required = false) UUID plantId) {
+  public Map<String, Object> mapConfiguration(@RequestParam(name = "plantId", required = false) UUID plantId) {
     List<Map<String, Object>> configurations = plantId == null
         ? jdbc.queryForList("SELECT id,plant_id,provider,default_latitude,default_longitude,default_zoom,tile_url,style_url,visible_layers::text AS visible_layers,enabled,version FROM map_configurations WHERE enabled ORDER BY plant_id NULLS LAST LIMIT 1")
         : jdbc.queryForList("SELECT id,plant_id,provider,default_latitude,default_longitude,default_zoom,tile_url,style_url,visible_layers::text AS visible_layers,enabled,version FROM map_configurations WHERE enabled AND (plant_id=? OR plant_id IS NULL) ORDER BY plant_id NULLS LAST LIMIT 1", plantId);
@@ -141,7 +141,7 @@ public class WorkspaceController {
 
   @PutMapping("/map-configuration/{id}")
   @PreAuthorize("hasAuthority('map.configure')")
-  public Map<String, Object> updateMapConfiguration(@PathVariable UUID id,
+  public Map<String, Object> updateMapConfiguration(@PathVariable("id") UUID id,
                                                      @Valid @RequestBody MapConfigurationRequest request,
                                                      Principal actor) {
     if (!List.of("google", "osm", "offline", "mapbox").contains(request.provider())) {
@@ -161,7 +161,7 @@ public class WorkspaceController {
 
   @PostMapping("/map-configuration/{id}/test")
   @PreAuthorize("hasAuthority('map.configure')")
-  public Map<String, Object> testMapConfiguration(@PathVariable UUID id, Principal actor) {
+  public Map<String, Object> testMapConfiguration(@PathVariable("id") UUID id, Principal actor) {
     Map<String, Object> configuration = jdbc.queryForMap("SELECT provider,tile_url,style_url,secret_reference FROM map_configurations WHERE id=?", id);
     String provider = String.valueOf(configuration.get("provider"));
     boolean configured = switch (provider) {

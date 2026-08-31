@@ -19,7 +19,7 @@ public class TelemetryController {
 
   @PostMapping("/assets/{assetId}/position")
   @PreAuthorize("hasAuthority('vehicle.manage')")
-  public TelemetryIngestionService.Result position(@PathVariable UUID assetId,
+  public TelemetryIngestionService.Result position(@PathVariable("assetId") UUID assetId,
                                                     @Valid @RequestBody PositionTelemetry message) {
     return ingestion.accept(assetId, message);
   }

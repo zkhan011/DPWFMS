@@ -91,7 +91,7 @@ public class UserAdministrationController {
   @PatchMapping("/users/{id}/enabled")
   @PreAuthorize("hasAuthority('user.manage')")
   @Transactional
-  public void setEnabled(@PathVariable UUID id, @RequestParam boolean value, Principal actor) {
+  public void setEnabled(@PathVariable("id") UUID id, @RequestParam("value") boolean value, Principal actor) {
     if (!value && count("""
         SELECT count(*) FROM users u JOIN user_roles ur ON ur.user_id=u.id
         JOIN roles r ON r.id=ur.role_id WHERE u.id=? AND u.enabled AND r.name='SUPER_ADMIN'

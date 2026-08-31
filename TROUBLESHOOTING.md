@@ -24,6 +24,7 @@ The `ADMIN_DEMO_ACCESS` role must return all three permissions. The Administrati
 | Flyway failure | inspect `flyway_schema_history`; never edit an applied migration |
 | Frontend 401 | clear session storage, verify `DPWFMS_LOCAL_USERNAME/PASSWORD`, sign in again |
 | Map blank | test `/api/workspace/map-configuration`, tile URL and browser network; offline coverage may be missing |
+| `Name for argument ... not specified` | rebuild the complete Maven reactor; controller parameters have explicit annotation names and Maven compiles with `-parameters` |
 | Google map falls back | key is missing/restricted; see `GOOGLE_MAPS_SETUP.md` |
 | Kernel not configured | set `KERNEL_ENABLED=true` and a TLS endpoint, then restart |
 | Broker unhealthy | inspect Control Center, broker certificate, credentials, vhost/topics and DLQ |
