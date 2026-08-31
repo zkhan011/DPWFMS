@@ -18,6 +18,7 @@ The following is the exact default grant matrix seeded by Flyway. Custom roles m
 | AUDITOR | dashboard.read, plant.read, integration.read, user.read, role.read, audit.read |
 | API_SERVICE | plant.read, map.read, vehicle.read, vehicle.manage, order.read, order.create, dispatch.read, alert.read, integration.read |
 | DRIVER_OR_VEHICLE_CLIENT | vehicle.read, order.read |
+| ADMIN_DEMO_ACCESS | map.read, role.read, user.read |
 
 The complete permission catalog is: dashboard.read, plant.read, plant.manage, map.read, map.configure, vehicle.read, vehicle.manage, vehicle.enable, vehicle.disable, order.read, order.create, order.assign, order.cancel, order.retry, dispatch.read, dispatch.execute, dispatch.override, parking.read, parking.manage, fueling.read, fueling.manage, charging.read, charging.manage, alert.read, alert.acknowledge, alert.resolve, report.read, report.export, control_center.read, control_center.operate, integration.read, integration.manage, user.read, user.manage, role.read, role.manage, audit.read, system.configure.
 
@@ -50,3 +51,5 @@ ON CONFLICT DO NOTHING;
 ## Opt-in development users
 
 Flyway V7 inserts `admin.demo`, `dispatcher.demo`, `operator.demo`, and `viewer.demo` as fixed, disabled, passwordless PostgreSQL records and assigns `SUPER_ADMIN`, which contains all 38 permissions, plus every plant. They cannot authenticate in that state. With the `dev` Spring profile, set `DPWFMS_SAMPLE_USERS_ENABLED=true` and provide `DPWFMS_SAMPLE_USER_PASSWORD` with at least 12 characters; the development seeder then hashes that password and enables only records managed by V7. Existing user-created accounts are never overwritten or elevated. This seeder cannot run under the `prod` profile.
+
+Flyway V8 additionally assigns the protected `ADMIN_DEMO_ACCESS` role to `admin.demo`. That role explicitly grants `map.read`, `user.read`, and `role.read` through the normal role-permission tables, even though the Flyway-managed demo administrator also receives those authorities through `SUPER_ADMIN`.
