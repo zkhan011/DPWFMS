@@ -19,9 +19,10 @@ import org.springframework.transaction.annotation.Transactional;
 @ConditionalOnProperty(name = "dpwfms.development.sample-users-enabled", havingValue = "true")
 public class DevelopmentSampleUserSeeder implements ApplicationRunner {
   private static final List<SampleUser> SAMPLE_USERS = List.of(
-      new SampleUser("dispatcher.demo", "Demo Dispatcher", "DISPATCHER"),
-      new SampleUser("operator.demo", "Demo Control Room Operator", "CONTROL_ROOM_OPERATOR"),
-      new SampleUser("viewer.demo", "Demo Map Viewer", "REPORT_VIEWER"));
+      new SampleUser("admin.demo", "Demo Administrator", "SUPER_ADMIN"),
+      new SampleUser("dispatcher.demo", "Demo Dispatcher", "SUPER_ADMIN"),
+      new SampleUser("operator.demo", "Demo Control Room Operator", "SUPER_ADMIN"),
+      new SampleUser("viewer.demo", "Demo Map Viewer", "SUPER_ADMIN"));
 
   private final JdbcTemplate jdbc;
   private final PasswordEncoder passwordEncoder;
@@ -51,7 +52,9 @@ public class DevelopmentSampleUserSeeder implements ApplicationRunner {
     for (SampleUser sample : SAMPLE_USERS) {
       UUID roleId = roles.get(sample.role());
       if (roleId == null) throw new IllegalStateException("required sample role is missing: " + sample.role());
-      UUID userId = findUser(sample.username());
+      ExistingUser existing = findUser(sample.username());
+      if (existing != null && !existing.managedSample()) continue;
+      UUID userId = existing == null ? null : existing.id();
       if (userId == null) {
         userId = UUID.randomUUID();
         jdbc.update("""
@@ -64,6 +67,15 @@ public class DevelopmentSampleUserSeeder implements ApplicationRunner {
             INSERT INTO audit_logs(id,occurred_at,actor,action,resource_type,resource_id,after_value)
             VALUES (?,now(),'development-seeder','USER_CREATED','USER',?,jsonb_build_object('username',?,'role',?))
             """, UUID.randomUUID(), userId.toString(), sample.username(), sample.role());
+      } else {
+        jdbc.update("""
+            UPDATE users SET password_hash=?,enabled=TRUE,password_changed_at=now(),updated_at=now(),version=version+1
+            WHERE id=? AND created_by='flyway-sample'
+            """, passwordEncoder.encode(password), userId);
+        jdbc.update("""
+            INSERT INTO audit_logs(id,occurred_at,actor,action,resource_type,resource_id,after_value)
+            VALUES (?,now(),'development-seeder','USER_ENABLED','USER',?,jsonb_build_object('username',?))
+            """, UUID.randomUUID(), userId.toString(), sample.username());
       }
       jdbc.update("INSERT INTO user_roles(user_id,role_id) VALUES (?,?) ON CONFLICT DO NOTHING", userId, roleId);
       for (UUID plantId : plants) {
@@ -75,11 +87,14 @@ public class DevelopmentSampleUserSeeder implements ApplicationRunner {
     }
   }
 
-  private UUID findUser(String username) {
-    List<UUID> matches = jdbc.queryForList(
-        "SELECT id FROM users WHERE lower(username)=lower(?)", UUID.class, username);
-    return matches.isEmpty() ? null : matches.getFirst();
+  private ExistingUser findUser(String username) {
+    List<Map<String, Object>> matches = jdbc.queryForList(
+        "SELECT id,created_by FROM users WHERE lower(username)=lower(?)", username);
+    if (matches.isEmpty()) return null;
+    Map<String, Object> user = matches.getFirst();
+    return new ExistingUser((UUID) user.get("id"), "flyway-sample".equals(user.get("created_by")));
   }
 
   record SampleUser(String username, String displayName, String role) {}
+  record ExistingUser(UUID id, boolean managedSample) {}
 }

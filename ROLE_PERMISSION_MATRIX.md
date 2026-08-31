@@ -49,4 +49,4 @@ ON CONFLICT DO NOTHING;
 
 ## Opt-in development users
 
-With the `dev` Spring profile, set `DPWFMS_SAMPLE_USERS_ENABLED=true` and provide `DPWFMS_SAMPLE_USER_PASSWORD` with at least 12 characters. At startup DPW FMS inserts `dispatcher.demo`, `operator.demo`, and `viewer.demo` into PostgreSQL, assigns their standard roles, and grants every enabled plant. Existing accounts are not overwritten. This seeder cannot run under the `prod` profile.
+Flyway V7 inserts `admin.demo`, `dispatcher.demo`, `operator.demo`, and `viewer.demo` as fixed, disabled, passwordless PostgreSQL records and assigns `SUPER_ADMIN`, which contains all 38 permissions, plus every plant. They cannot authenticate in that state. With the `dev` Spring profile, set `DPWFMS_SAMPLE_USERS_ENABLED=true` and provide `DPWFMS_SAMPLE_USER_PASSWORD` with at least 12 characters; the development seeder then hashes that password and enables only records managed by V7. Existing user-created accounts are never overwritten or elevated. This seeder cannot run under the `prod` profile.

@@ -18,7 +18,7 @@ class AutomationMigrationIntegrationTest {
   @Test void migratesVersionedAutomationRulesAndUniquenessGuards() throws Exception {
     Flyway flyway = Flyway.configure().dataSource(postgres.getJdbcUrl(), postgres.getUsername(),
         postgres.getPassword()).load();
-    assertEquals(6, flyway.migrate().migrationsExecuted);
+    assertEquals(7, flyway.migrate().migrationsExecuted);
     try (var connection = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
          var statement = connection.createStatement()) {
       try (var rules = statement.executeQuery("SELECT count(*) FROM automation_rules")) {
@@ -36,6 +36,23 @@ class AutomationMigrationIntegrationTest {
           """)) {
         assertTrue(mapGrant.next());
         assertEquals(1, mapGrant.getInt(1));
+      }
+      try (var sampleUsers = statement.executeQuery("""
+          SELECT count(*), count(*) FILTER (WHERE enabled), count(*) FILTER (WHERE password_hash IS NULL)
+          FROM users WHERE created_by='flyway-sample'
+          """)) {
+        assertTrue(sampleUsers.next());
+        assertEquals(4, sampleUsers.getInt(1));
+        assertEquals(0, sampleUsers.getInt(2));
+        assertEquals(4, sampleUsers.getInt(3));
+      }
+      try (var grants = statement.executeQuery("""
+          SELECT count(DISTINCT p.code) FROM users u JOIN user_roles ur ON ur.user_id=u.id
+          JOIN role_permissions rp ON rp.role_id=ur.role_id JOIN permissions p ON p.id=rp.permission_id
+          WHERE u.created_by='flyway-sample'
+          """)) {
+        assertTrue(grants.next());
+        assertEquals(38, grants.getInt(1));
       }
     }
   }

@@ -41,7 +41,9 @@ Open dashboard at <http://localhost:3000>, Swagger at <http://localhost:8080/swa
 
 To create the development users `dispatcher.demo`, `operator.demo`, and `viewer.demo`, set `DPWFMS_SAMPLE_USER_PASSWORD` to a password of at least 12 characters after starting the API, then run `./scripts/add-sample-users.sh`. On Windows use `.\scripts\add-sample-users.ps1`. Both scripts use the audited user API and leave existing usernames unchanged.
 
-Alternatively, when running with the Spring `dev` profile, set `DPWFMS_SAMPLE_USERS_ENABLED=true` and `DPWFMS_SAMPLE_USER_PASSWORD`. The application will insert those users into PostgreSQL during startup without overwriting existing accounts. Map viewing requires `map.read`, `vehicle.read`, and a plant assignment; see `ROLE_PERMISSION_MATRIX.md` for the exact grants and SQL.
+Alternatively, Flyway V7 creates four fixed but disabled/passwordless database records. When running with the Spring `dev` profile, set `DPWFMS_SAMPLE_USERS_ENABLED=true` and `DPWFMS_SAMPLE_USER_PASSWORD`; the application securely activates those migration-managed users with all permissions without overwriting user-created accounts. Map viewing requires `map.read`, `vehicle.read`, and a plant assignment; see `ROLE_PERMISSION_MATRIX.md` for the exact grants and SQL.
+
+For an end-to-end walkthrough using deterministic vehicle telemetry, see [`MOCK_DATA_TESTING.md`](MOCK_DATA_TESTING.md). Detailed OpenStreetMap and Google Maps integration steps are in [`MAP_CONFIGURATION.md`](MAP_CONFIGURATION.md) and [`GOOGLE_MAPS_SETUP.md`](GOOGLE_MAPS_SETUP.md).
 
 ```bash
 curl -u "$DPWFMS_LOCAL_USERNAME:$DPWFMS_LOCAL_PASSWORD" http://localhost:8080/api/assets
