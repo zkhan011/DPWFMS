@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Creates opt-in development identities without committing a shared password. */
 @Component
-@Profile("dev")
+@Profile("dev & !prod")
 @ConditionalOnProperty(name = "dpwfms.development.sample-users-enabled", havingValue = "true")
 public class DevelopmentSampleUserSeeder implements ApplicationRunner {
   private static final List<SampleUser> SAMPLE_USERS = List.of(
@@ -29,7 +29,7 @@ public class DevelopmentSampleUserSeeder implements ApplicationRunner {
   private final String password;
 
   public DevelopmentSampleUserSeeder(JdbcTemplate jdbc, PasswordEncoder passwordEncoder,
-                                     @Value("${DPWFMS_SAMPLE_USER_PASSWORD:}") String password) {
+                                     @Value("${dpwfms.development.sample-user-password:${DPWFMS_SAMPLE_USER_PASSWORD:}}") String password) {
     this.jdbc = jdbc;
     this.passwordEncoder = passwordEncoder;
     this.password = password;

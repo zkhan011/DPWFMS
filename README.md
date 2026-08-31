@@ -45,6 +45,8 @@ Alternatively, Flyway V7 creates four fixed but disabled/passwordless database r
 
 For an end-to-end walkthrough using deterministic vehicle telemetry, see [`MOCK_DATA_TESTING.md`](MOCK_DATA_TESTING.md). Detailed OpenStreetMap and Google Maps integration steps are in [`MAP_CONFIGURATION.md`](MAP_CONFIGURATION.md) and [`GOOGLE_MAPS_SETUP.md`](GOOGLE_MAPS_SETUP.md).
 
+To run the API under the Eclipse debugger with local broker/database infrastructure and a local-only all-permissions demo login, follow [`ECLIPSE_SETUP.md`](ECLIPSE_SETUP.md).
+
 ```bash
 curl -u "$DPWFMS_LOCAL_USERNAME:$DPWFMS_LOCAL_PASSWORD" http://localhost:8080/api/assets
 curl -u "$DPWFMS_LOCAL_USERNAME:$DPWFMS_LOCAL_PASSWORD" -H 'Content-Type: application/json' -d '{"type":"CONTAINER_TRANSPORT","priority":80,"source":"QUAY-01","destination":"YARD-03","requiredCapabilities":["TWISTLOCK"]}' http://localhost:8080/api/jobs
