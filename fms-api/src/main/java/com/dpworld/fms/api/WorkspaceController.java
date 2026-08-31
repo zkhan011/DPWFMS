@@ -132,8 +132,8 @@ public class WorkspaceController {
   @PreAuthorize("hasAuthority('map.read')")
   public Map<String, Object> mapConfiguration(@RequestParam(required = false) UUID plantId) {
     List<Map<String, Object>> configurations = plantId == null
-        ? jdbc.queryForList("SELECT id,plant_id,provider,default_latitude,default_longitude,default_zoom,tile_url,style_url,visible_layers,enabled,version FROM map_configurations WHERE enabled ORDER BY plant_id NULLS LAST LIMIT 1")
-        : jdbc.queryForList("SELECT id,plant_id,provider,default_latitude,default_longitude,default_zoom,tile_url,style_url,visible_layers,enabled,version FROM map_configurations WHERE enabled AND (plant_id=? OR plant_id IS NULL) ORDER BY plant_id NULLS LAST LIMIT 1", plantId);
+        ? jdbc.queryForList("SELECT id,plant_id,provider,default_latitude,default_longitude,default_zoom,tile_url,style_url,visible_layers::text AS visible_layers,enabled,version FROM map_configurations WHERE enabled ORDER BY plant_id NULLS LAST LIMIT 1")
+        : jdbc.queryForList("SELECT id,plant_id,provider,default_latitude,default_longitude,default_zoom,tile_url,style_url,visible_layers::text AS visible_layers,enabled,version FROM map_configurations WHERE enabled AND (plant_id=? OR plant_id IS NULL) ORDER BY plant_id NULLS LAST LIMIT 1", plantId);
     return configurations.isEmpty() ? Map.of("provider", "offline", "default_latitude", 24.9857,
         "default_longitude", 55.0273, "default_zoom", 12, "tile_url", "/tiles/{z}/{x}/{y}.png")
         : configurations.getFirst();
@@ -156,7 +156,7 @@ public class WorkspaceController {
         actor.getName(), id);
     if (changed != 1) throw new IllegalArgumentException("unknown map configuration " + id);
     audit(actor.getName(), "MAP_CONFIGURATION_UPDATED", id.toString(), request.provider());
-    return jdbc.queryForMap("SELECT id,plant_id,provider,default_latitude,default_longitude,default_zoom,tile_url,style_url,visible_layers,enabled,version FROM map_configurations WHERE id=?", id);
+    return jdbc.queryForMap("SELECT id,plant_id,provider,default_latitude,default_longitude,default_zoom,tile_url,style_url,visible_layers::text AS visible_layers,enabled,version FROM map_configurations WHERE id=?", id);
   }
 
   @PostMapping("/map-configuration/{id}/test")
@@ -190,7 +190,7 @@ public class WorkspaceController {
   @GetMapping("/integrations")
   @PreAuthorize("hasAuthority('integration.read')")
   public List<Map<String, Object>> integrations() {
-    return jdbc.queryForList("SELECT id,integration_code,integration_type,enabled,endpoint,port,tls_enabled,connection_timeout_ms,retry_policy,health_status,last_success_at,last_error,version FROM integration_configurations ORDER BY integration_code");
+    return jdbc.queryForList("SELECT id,integration_code,integration_type,enabled,endpoint,port,tls_enabled,connection_timeout_ms,retry_policy::text AS retry_policy,health_status,last_success_at,last_error,version FROM integration_configurations ORDER BY integration_code");
   }
 
   private Map<String, Object> integration(String code) {

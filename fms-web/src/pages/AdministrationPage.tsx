@@ -12,8 +12,9 @@ type Tab='integrations'|'users'|'maps';
 export default function AdministrationPage(){
   const[tab,setTab]=useState<Tab>('users'),[loading,setLoading]=useState(true),[error,setError]=useState('');
   const[integrations,setIntegrations]=useState<Integration[]>([]),[users,setUsers]=useState<User[]>([]),[roles,setRoles]=useState<Role[]>([]),[plants,setPlants]=useState<Plant[]>([]),[map,setMap]=useState<MapConfig>();
+  const[sectionErrors,setSectionErrors]=useState<Record<Tab,string>>({integrations:'',users:'',maps:''});
   async function load(){
-    setLoading(true);setError('');
+    setLoading(true);setError('');setSectionErrors({integrations:'',users:'',maps:''});
     const results=await Promise.allSettled([
       api<Integration[]>('/api/workspace/integrations'),api<User[]>('/api/admin/users'),
       api<Role[]>('/api/admin/roles'),api<Plant[]>('/api/workspace/plants'),
@@ -24,6 +25,12 @@ export default function AdministrationPage(){
     if(results[2].status==='fulfilled')setRoles(results[2].value);
     if(results[3].status==='fulfilled')setPlants(results[3].value);
     if(results[4].status==='fulfilled')setMap(results[4].value);
+    const reason=(result:PromiseSettledResult<unknown>)=>result.status==='rejected'?(result.reason instanceof Error?result.reason.message:'Request failed'):'';
+    setSectionErrors({
+      integrations:reason(results[0]),
+      users:[reason(results[1]),reason(results[2]),reason(results[3])].filter(Boolean).join(' · '),
+      maps:reason(results[4])
+    });
     const failures=results.filter(result=>result.status==='rejected');
     if(failures.length===results.length)setError('Your account cannot access administration data. Sign in as an administrator.');
     setLoading(false);
@@ -32,9 +39,9 @@ export default function AdministrationPage(){
   if(loading)return <Loading/>;if(error)return <Failure message={error}/>;
   return <><PageHeader eyebrow="GOVERNANCE" title="Administration" description="Manage users, roles, plants, maps, integrations and master data."/>
     <nav className="admin-tabs" aria-label="Administration sections"><button className={tab==='integrations'?'active':''} onClick={()=>setTab('integrations')}>Integrations</button><button className={tab==='users'?'active':''} onClick={()=>setTab('users')}>Users & access</button><button className={tab==='maps'?'active':''} onClick={()=>setTab('maps')}>Map provider</button></nav>
-    {tab==='integrations'&&<IntegrationTable rows={integrations}/>}
-    {tab==='users'&&(roles.length?<UserAdministration users={users} roles={roles} plants={plants} onCreated={load}/>:<Failure message="User administration requires user.read and role.read permissions."/>)}
-    {tab==='maps'&&(map?<MapAdministration configuration={map} onSaved={load}/>:<Failure message="Map administration requires map.read permission."/>)} </>;
+    {tab==='integrations'&&(sectionErrors.integrations?<Failure message={sectionErrors.integrations}/>:<IntegrationTable rows={integrations}/>)}
+    {tab==='users'&&(sectionErrors.users?<Failure message={sectionErrors.users}/>:roles.length?<UserAdministration users={users} roles={roles} plants={plants} onCreated={load}/>:<Empty message="No roles are configured."/>)}
+    {tab==='maps'&&(sectionErrors.maps?<Failure message={sectionErrors.maps}/>:map?<MapAdministration configuration={map} onSaved={load}/>:<Empty message="No enabled map configuration exists."/>)} </>;
 }
 
 function IntegrationTable({rows}:{rows:Integration[]}){return <><section className="panel table-panel">{rows.length?<table><thead><tr><th>Integration</th><th>Type</th><th>Enabled</th><th>Endpoint</th><th>TLS</th><th>Health</th></tr></thead><tbody>{rows.map(i=><tr key={i.id}><td><b>{i.integration_code}</b></td><td>{i.integration_type}</td><td><Status value={i.enabled?'ENABLED':'DISABLED'}/></td><td>{i.endpoint?`${i.endpoint}${i.port?`:${i.port}`:''}`:'Environment configuration'}</td><td>{i.tls_enabled?'Required':'Disabled'}</td><td><Status value={i.health_status}/></td></tr>)}</tbody></table>:<Empty message="No integration adapters are configured."/>}</section><div className="warning panel"><b>Secrets are write-only</b><p>Authentication references are masked and never returned to this browser.</p></div></>}

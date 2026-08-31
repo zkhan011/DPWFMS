@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.DriverManager;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -64,5 +67,20 @@ class AutomationMigrationIntegrationTest {
         assertEquals("{map.read,role.read,user.read}", adminDemoGrants.getString(1));
       }
     }
+    var dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+    var jdbc = new JdbcTemplate(dataSource);
+    var json = new ObjectMapper();
+    var role = jdbc.queryForMap("""
+        SELECT r.id,r.name,coalesce(string_agg(p.code, ',' ORDER BY p.code),'') AS permissions
+        FROM roles r LEFT JOIN role_permissions rp ON rp.role_id=r.id
+        LEFT JOIN permissions p ON p.id=rp.permission_id
+        WHERE r.name='ADMIN_DEMO_ACCESS' GROUP BY r.id
+        """);
+    var mapConfiguration = jdbc.queryForMap("""
+        SELECT id,provider,visible_layers::text AS visible_layers
+        FROM map_configurations WHERE enabled ORDER BY plant_id NULLS LAST LIMIT 1
+        """);
+    assertTrue(json.writeValueAsString(role).contains("map.read"));
+    assertTrue(json.writeValueAsString(mapConfiguration).contains("vehicles"));
   }
 }

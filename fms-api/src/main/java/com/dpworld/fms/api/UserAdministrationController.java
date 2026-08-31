@@ -49,7 +49,7 @@ public class UserAdministrationController {
   public List<Map<String, Object>> roles() {
     return jdbc.queryForList("""
         SELECT r.id,r.name,r.description,r.protected_role,
-               coalesce(array_agg(p.code ORDER BY p.code) FILTER (WHERE p.code IS NOT NULL),ARRAY[]::varchar[]) AS permissions
+               coalesce(string_agg(p.code, ',' ORDER BY p.code),'') AS permissions
           FROM roles r LEFT JOIN role_permissions rp ON rp.role_id=r.id
           LEFT JOIN permissions p ON p.id=rp.permission_id
          GROUP BY r.id ORDER BY r.name
