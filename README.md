@@ -55,3 +55,53 @@ curl -u "$DPWFMS_LOCAL_USERNAME:$DPWFMS_LOCAL_PASSWORD" -H 'Content-Type: applic
 ## Operational status
 
 This is a tested foundation and working vertical slice, **not a claim of complete production readiness**. Remaining phases include durable repository implementations for every aggregate, DPWUM deployment integration, Redis-backed locks, complete map administration, real TrackIT certification, telemetry partition maintenance, broad Testcontainers coverage, and a production load/security/HA exercise. See the checklists and exact protocols in `docs/`.
+
+## Operational automation workspaces
+
+The React application extends the existing control-room shell with Operations
+Dashboard, Live Fleet Map, Jobs & Dispatch, Automatic Parking, Automatic
+Charging, Alerts, Reports and Operational Parameters workspaces. OpenStreetMap
+is the default free online provider; offline Jebel Ali XYZ tiles and optional
+Google/Mapbox providers remain environment-configured. No frontend bundle
+contains a map key.
+
+Flyway V10 adapts the existing parking zones/spaces and service stations/bays,
+then adds assignment history, charging queue/capacity state, operational
+parameter versions, exceptions, constraints, permissions and safe JEA sample
+inventory. Apply it by starting the API normally; never edit or manually rerun
+an already-applied migration.
+
+Automatic parking defaults to `SUGGEST_ONLY`. An operator can preview candidates
+and their rejection reasons before approval. Switching to `AUTOMATIC` requires
+the persisted operational parameters and eligible fresh telemetry. Bay
+reservation is serialized and protected by partial unique indexes.
+
+Automatic charging uses station capacity plus individual slots. The backend
+locks a station and slot transactionally, queues only within the configured
+maximum, creates an existing DPWFMS job for immediate assignments and promotes
+the next queued asset when a slot is released. Capacity cannot be reduced below
+active assignments or above active slot inventory.
+
+Operational parameters are stored as immutable database versions. Updates and
+rollbacks require dedicated permissions and a change reason; optimistic version
+checks reject stale browser forms. Secrets, connection strings and map keys are
+not operational parameters.
+
+Relevant permissions include `parking.assign`, `parking.override`,
+`parking.bay.manage`, `parking.automation.run`, `charging.assign`,
+`charging.override`, `charging.station.manage`, `charging.automation.run`,
+`parameters.read`, `parameters.edit`, `parameters.rollback` and the existing
+`audit.read`. Java method security is authoritative; frontend visibility is not
+a security boundary.
+
+Validation commands:
+
+```bash
+mvn clean test
+mvn clean package -DskipTests
+cd fms-web && npm run build
+```
+
+Migration/concurrency integration tests require a Docker-accessible PostgreSQL
+instance through Testcontainers. RabbitMQ telemetry simulation is documented in
+[RABBITMQ_TELEMETRY.md](RABBITMQ_TELEMETRY.md).

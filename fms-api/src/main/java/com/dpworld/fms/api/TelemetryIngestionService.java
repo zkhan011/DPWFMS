@@ -14,9 +14,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class TelemetryIngestionService {
   private final JdbcTemplate jdbc;
   private final AutomaticChargingService charging;
-  public TelemetryIngestionService(JdbcTemplate jdbc, AutomaticChargingService charging) {
+  private final AutomaticParkingAssignmentService parking;
+  private final AssignmentTelemetryReconciler assignmentReconciler;
+  public TelemetryIngestionService(JdbcTemplate jdbc, AutomaticChargingService charging,
+      AutomaticParkingAssignmentService parking, AssignmentTelemetryReconciler assignmentReconciler) {
     this.jdbc = jdbc;
     this.charging = charging;
+    this.parking = parking;
+    this.assignmentReconciler = assignmentReconciler;
   }
 
   @Transactional
@@ -28,7 +33,7 @@ public class TelemetryIngestionService {
         VALUES (?,?,'TELEMETRY_API',?,?, 'RECEIVED',now(),?)
         ON CONFLICT (channel,external_message_id) DO NOTHING
         """, integrationId, message.messageId(), message.schemaVersion(), message.correlationId(), hash(message));
-    if (inbox == 0) return new Result("DUPLICATE", false, assetId, message.occurredAt(), null);
+    if (inbox == 0) return new Result("DUPLICATE", false, assetId, message.occurredAt(), null, null);
 
     UUID assetTypeId = jdbc.query("SELECT id FROM asset_types WHERE code=?", rs -> rs.next()
         ? rs.getObject(1, UUID.class) : null, message.assetType());
@@ -65,7 +70,7 @@ public class TelemetryIngestionService {
     }
     if (updated == 0) {
       jdbc.update("UPDATE integration_messages SET status='IGNORED_OUT_OF_ORDER',processed_at=now() WHERE id=?", integrationId);
-      return new Result("OUT_OF_ORDER", false, assetId, message.occurredAt(), null);
+      return new Result("OUT_OF_ORDER", false, assetId, message.occurredAt(), null, null);
     }
     jdbc.update("""
         INSERT INTO asset_positions(asset_id,recorded_at,latitude,longitude,heading,speed_kph)
@@ -73,9 +78,12 @@ public class TelemetryIngestionService {
         """, assetId, timestamp(message.occurredAt()), message.latitude(), message.longitude(),
         message.heading(), message.speedKph());
     jdbc.update("UPDATE integration_messages SET status='PROCESSED',processed_at=now() WHERE id=?", integrationId);
+    assignmentReconciler.reconcile(assetId, message.latitude(), message.longitude(),
+        message.energyPercent(), message.operationalStatus());
     UUID chargingJobId = charging.evaluate(assetId, message.energySource(), message.energyPercent(),
         message.operationalStatus(), message.availabilityStatus(), message.occurredAt());
-    return new Result("ACCEPTED", true, assetId, message.occurredAt(), chargingJobId);
+    UUID parkingJobId = chargingJobId == null ? parking.evaluate(assetId, message.occurredAt()) : null;
+    return new Result("ACCEPTED", true, assetId, message.occurredAt(), chargingJobId, parkingJobId);
   }
 
   private long count(UUID assetId) { return jdbc.queryForObject("SELECT count(*) FROM assets WHERE id=?", Long.class, assetId); }
@@ -89,5 +97,5 @@ public class TelemetryIngestionService {
     }
   }
   public record Result(String result, boolean currentPositionUpdated, UUID assetId, Instant occurredAt,
-                       UUID automaticChargingJobId) {}
+                       UUID automaticChargingJobId, UUID automaticParkingJobId) {}
 }

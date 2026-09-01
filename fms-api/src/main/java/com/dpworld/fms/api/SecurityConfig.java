@@ -33,7 +33,10 @@ public class SecurityConfig {
       "fueling.manage", "charging.read", "charging.manage", "alert.read", "alert.acknowledge",
       "alert.resolve", "report.read", "report.export", "control_center.read",
       "control_center.operate", "integration.read", "integration.manage", "user.read",
-      "user.manage", "role.read", "role.manage", "audit.read", "system.configure");
+      "user.manage", "role.read", "role.manage", "audit.read", "system.configure",
+      "parking.assign", "parking.override", "parking.bay.manage", "parking.automation.run",
+      "charging.assign", "charging.override", "charging.station.manage", "charging.automation.run",
+      "parameters.read", "parameters.edit", "parameters.rollback");
 
   @Bean
   SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {

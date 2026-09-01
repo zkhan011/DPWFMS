@@ -21,7 +21,7 @@ class AutomationMigrationIntegrationTest {
   @Test void migratesVersionedAutomationRulesAndUniquenessGuards() throws Exception {
     Flyway flyway = Flyway.configure().dataSource(postgres.getJdbcUrl(), postgres.getUsername(),
         postgres.getPassword()).load();
-    assertEquals(9, flyway.migrate().migrationsExecuted);
+    assertEquals(10, flyway.migrate().migrationsExecuted);
     try (var connection = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
          var statement = connection.createStatement()) {
       try (var rules = statement.executeQuery("SELECT count(*) FROM automation_rules")) {
@@ -55,7 +55,7 @@ class AutomationMigrationIntegrationTest {
           WHERE u.created_by='flyway-sample'
           """)) {
         assertTrue(grants.next());
-        assertEquals(38, grants.getInt(1));
+        assertEquals(49, grants.getInt(1));
       }
       try (var adminDemoGrants = statement.executeQuery("""
           SELECT array_agg(p.code ORDER BY p.code) FROM users u

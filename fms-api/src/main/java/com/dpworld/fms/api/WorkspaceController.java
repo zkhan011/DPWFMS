@@ -46,10 +46,27 @@ public class WorkspaceController {
     result.put("fleetInOperation", count("SELECT count(*) FROM assets WHERE enabled AND operational_status IN ('WORKING','FUELLING','CHARGING')"));
     result.put("activeVehicles", count("SELECT count(*) FROM assets WHERE operational_status <> 'OFFLINE' AND enabled"));
     result.put("idleVehicles", count("SELECT count(*) FROM assets WHERE operational_status = 'IDLE' AND enabled"));
+    result.put("availableVehicles", count("SELECT count(*) FROM assets WHERE availability_status='AVAILABLE'"));
+    result.put("reservedVehicles", count("SELECT count(*) FROM assets WHERE availability_status='RESERVED'"));
+    result.put("assignedVehicles", count("SELECT count(*) FROM assets WHERE availability_status='ASSIGNED'"));
+    result.put("parkedVehicles", count("SELECT count(*) FROM assets WHERE operational_status='PARKED'"));
+    result.put("chargingVehicles", count("SELECT count(*) FROM assets WHERE operational_status='CHARGING'"));
+    result.put("waitingForCharging", count("SELECT count(*) FROM charging_assignments WHERE status='QUEUED'"));
+    result.put("fuelingVehicles", count("SELECT count(*) FROM assets WHERE operational_status='FUELLING'"));
+    result.put("maintenanceVehicles", count("SELECT count(*) FROM assets WHERE operational_status='MAINTENANCE'"));
+    result.put("staleTelemetry", count("SELECT count(*) FROM assets WHERE last_telemetry_at IS NULL OR last_telemetry_at < now()-interval '60 seconds'"));
     result.put("offlineVehicles", count("SELECT count(*) FROM assets WHERE operational_status = 'OFFLINE'"));
     result.put("activeOrders", count("SELECT count(*) FROM transport_orders WHERE status NOT IN ('COMPLETED','CANCELLED','FAILED')"));
     result.put("failedOrders", count("SELECT count(*) FROM transport_orders WHERE status = 'FAILED'"));
     result.put("activeAlerts", count("SELECT count(*) FROM alerts WHERE acknowledged_at IS NULL"));
+    result.put("criticalAlerts", count("SELECT count(*) FROM alerts WHERE acknowledged_at IS NULL AND severity IN ('CRITICAL','MAJOR')"));
+    result.put("activeJobs", count("SELECT count(*) FROM jobs WHERE status NOT IN ('COMPLETED','CANCELLED','FAILED','REJECTED','EXPIRED')"));
+    result.put("failedJobs", count("SELECT count(*) FROM jobs WHERE status='FAILED'"));
+    result.put("parkingOccupied", count("SELECT count(*) FROM parking_spaces WHERE status='OCCUPIED'"));
+    result.put("parkingCapacity", count("SELECT count(*) FROM parking_spaces WHERE active"));
+    result.put("chargingOccupied", count("SELECT count(*) FROM charging_assignments WHERE status IN ('ASSIGNED','EN_ROUTE','ARRIVED','CHARGING')"));
+    result.put("chargingCapacity", count("SELECT coalesce(sum(simultaneous_capacity),0) FROM service_stations WHERE station_type='CHARGING' AND active"));
+    result.put("lastTelemetryAt", jdbc.queryForObject("SELECT max(last_telemetry_at) FROM assets", java.sql.Timestamp.class));
     result.put("fuelStations", count("SELECT count(*) FROM service_stations WHERE station_type IN ('FUELING','FUEL')"));
     result.put("chargingStations", count("SELECT count(*) FROM service_stations WHERE station_type IN ('CHARGING','CHARGE')"));
     result.put("totalDistanceKm", decimal("SELECT coalesce(sum(odometer_km),0) FROM assets"));
@@ -102,7 +119,7 @@ public class WorkspaceController {
     String sql = """
         SELECT a.id, a.fleet_number, t.code AS asset_type, p.name AS plant,
                a.latitude, a.longitude, a.heading, a.speed_kph, a.operational_status, a.availability_status,
-               a.energy_percent, a.energy_source, a.current_job_id, a.driver_id, a.last_telemetry_at, a.enabled
+               a.energy_percent, a.energy_source, a.current_job_id, a.driver_id, a.device_id, a.trackit_id, a.last_telemetry_at, a.enabled
           FROM assets a JOIN asset_types t ON t.id=a.asset_type_id
           LEFT JOIN plants p ON p.id=a.plant_id
         """;
@@ -133,6 +150,42 @@ public class WorkspaceController {
         FROM assets ORDER BY fleet_number LIMIT 1000
         """));
     return report;
+  }
+
+  @GetMapping("/map-operational-layers")
+  @PreAuthorize("hasAuthority('map.read')")
+  public Map<String, Object> mapOperationalLayers() {
+    return Map.of(
+        "parkingZones", jdbc.queryForList("SELECT z.id,z.code,z.name,z.boundary,l.latitude,l.longitude FROM parking_zones z JOIN locations l ON l.id=z.location_id WHERE z.active"),
+        "parkingBays", jdbc.queryForList("SELECT s.id,s.code,s.status,s.latitude,s.longitude,s.current_asset_id,z.code zone_code FROM parking_spaces s JOIN parking_zones z ON z.id=s.parking_zone_id WHERE s.active"),
+        "chargingStations", jdbc.queryForList("SELECT s.id,s.code,s.name,s.status,l.latitude,l.longitude,s.simultaneous_capacity FROM service_stations s JOIN locations l ON l.id=s.location_id WHERE s.station_type='CHARGING' AND s.active"),
+        "fuelingStations", jdbc.queryForList("SELECT s.id,coalesce(s.code,l.code) code,s.status,l.latitude,l.longitude FROM service_stations s JOIN locations l ON l.id=s.location_id WHERE s.station_type IN ('FUEL','FUELING') AND s.active"),
+        "geofences", jdbc.queryForList("SELECT id,code,zone_type,boundary,restricted FROM operational_zones"));
+  }
+
+  @GetMapping("/vehicles/{id}/trail")
+  @PreAuthorize("hasAuthority('map.read')")
+  public List<Map<String, Object>> vehicleTrail(@PathVariable("id") UUID id,
+      @RequestParam(name = "minutes", defaultValue = "60") @Min(1) @Max(1440) int minutes) {
+    return jdbc.queryForList("SELECT recorded_at,latitude,longitude,heading,speed_kph FROM asset_positions WHERE asset_id=? AND recorded_at>=now()-(? * interval '1 minute') ORDER BY recorded_at", id, minutes);
+  }
+
+  @GetMapping("/jobs")
+  @PreAuthorize("hasAuthority('dispatch.read')")
+  public List<Map<String, Object>> jobs() {
+    return jdbc.queryForList("SELECT j.*,a.fleet_number FROM jobs j LEFT JOIN assets a ON a.id=j.assigned_asset_id ORDER BY j.created_at DESC LIMIT 1000");
+  }
+
+  @GetMapping("/alerts")
+  @PreAuthorize("hasAuthority('alert.read')")
+  public List<Map<String, Object>> alerts() {
+    return jdbc.queryForList("SELECT al.*,a.fleet_number FROM alerts al LEFT JOIN assets a ON a.id=al.asset_id ORDER BY al.created_at DESC LIMIT 1000");
+  }
+
+  @GetMapping("/audit")
+  @PreAuthorize("hasAuthority('audit.read')")
+  public List<Map<String, Object>> auditHistory() {
+    return jdbc.queryForList("SELECT * FROM audit_logs ORDER BY occurred_at DESC LIMIT 1000");
   }
 
   @GetMapping("/orders")
