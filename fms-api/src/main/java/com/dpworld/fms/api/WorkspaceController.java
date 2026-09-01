@@ -115,6 +115,26 @@ public class WorkspaceController {
         authentication.getName(), authentication.getName());
   }
 
+  @GetMapping("/reports/fleet")
+  @PreAuthorize("hasAuthority('report.read')")
+  public Map<String, Object> fleetReport() {
+    Map<String, Object> report = new LinkedHashMap<>();
+    report.put("generatedAt", Instant.now());
+    report.put("total", count("SELECT count(*) FROM assets"));
+    report.put("positioned", count("SELECT count(*) FROM assets WHERE latitude IS NOT NULL AND longitude IS NOT NULL"));
+    report.put("stale", count("SELECT count(*) FROM assets WHERE last_telemetry_at IS NULL OR last_telemetry_at < now() - interval '60 seconds'"));
+    report.put("lowEnergy", count("SELECT count(*) FROM assets WHERE energy_percent <= 20"));
+    report.put("charging", count("SELECT count(*) FROM assets WHERE operational_status='CHARGING' OR current_job_id IN (SELECT id FROM jobs WHERE job_type='CHARGING' AND status NOT IN ('COMPLETED','CANCELLED','FAILED'))"));
+    report.put("byStatus", jdbc.queryForList("SELECT operational_status AS label,count(*) AS value FROM assets GROUP BY operational_status ORDER BY operational_status"));
+    report.put("byEnergySource", jdbc.queryForList("SELECT energy_source AS label,count(*) AS value FROM assets GROUP BY energy_source ORDER BY energy_source"));
+    report.put("assets", jdbc.queryForList("""
+        SELECT fleet_number,operational_status,availability_status,energy_percent,energy_source,
+               latitude,longitude,last_telemetry_at,current_job_id
+        FROM assets ORDER BY fleet_number LIMIT 1000
+        """));
+    return report;
+  }
+
   @GetMapping("/orders")
   @PreAuthorize("hasAuthority('order.read')")
   public List<Map<String, Object>> orders(@RequestParam(name = "plantId", required = false) UUID plantId, Authentication authentication) {

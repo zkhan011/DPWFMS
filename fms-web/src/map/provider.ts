@@ -1,7 +1,7 @@
 import L from 'leaflet';
 
 export type MapConfiguration={provider:'google'|'osm'|'offline'|'mapbox';default_latitude:number;default_longitude:number;default_zoom:number;tile_url?:string;style_url?:string};
-export type MapVehicle={name:string;latitude:number;longitude:number;status:string;stale:boolean};
+export type MapVehicle={name:string;latitude:number;longitude:number;status:string;stale:boolean;energyPercent?:number;energySource?:string;availability?:string};
 export interface MapHandle { setVehicles(vehicles:MapVehicle[]):void; setVehiclesVisible(visible:boolean):void; invalidateSize():void; destroy():void; }
 export interface MapProvider { readonly name:string; mount(element:HTMLElement,configuration:MapConfiguration):Promise<MapHandle>; }
 
@@ -16,7 +16,7 @@ class LeafletRasterProvider implements MapProvider {
       [configuration.default_latitude,configuration.default_longitude],configuration.default_zoom);
     L.tileLayer(this.tile(configuration),{maxZoom:20,attribution:'© OpenStreetMap contributors'}).addTo(map);
     const vehicleLayer=L.layerGroup().addTo(map);
-    let visible=true;
+    let visible=true,initialFit=true;
 
     const handle:MapHandle={
       setVehicles(vehicles){
@@ -26,12 +26,13 @@ class LeafletRasterProvider implements MapProvider {
           L.circleMarker([vehicle.latitude,vehicle.longitude],{
             radius:8,color:'#ffffff',weight:2,fillColor:color,fillOpacity:1
           }).bindTooltip(vehicle.name,{direction:'top'})
-            .bindPopup(`<b>${escapeHtml(vehicle.name)}</b><br>${escapeHtml(vehicle.status)}<br>${vehicle.stale?'Location stale':'Live position'}`)
+            .bindPopup(`<b>${escapeHtml(vehicle.name)}</b><br>Status: ${escapeHtml(vehicle.status)}<br>Availability: ${escapeHtml(vehicle.availability||'UNKNOWN')}<br>Energy: ${Math.round(vehicle.energyPercent||0)}% ${escapeHtml(vehicle.energySource||'')}<br>${vehicle.stale?'Location stale':'Live position'}`)
             .addTo(vehicleLayer);
         });
-        if(visible&&vehicles.length>0){
+        if(initialFit&&visible&&vehicles.length>0){
           const bounds=L.latLngBounds(vehicles.map(vehicle=>[vehicle.latitude,vehicle.longitude]));
           if(bounds.isValid())map.fitBounds(bounds.pad(.15),{maxZoom:configuration.default_zoom});
+          initialFit=false;
         }
       },
       setVehiclesVisible(nextVisible){

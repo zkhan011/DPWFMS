@@ -44,7 +44,8 @@ public class TelemetryIngestionService {
 
     int updated = jdbc.update("""
         UPDATE assets SET fleet_number=?,asset_type_id=?,plant_id=?,latitude=?,longitude=?,heading=?,
-          speed_kph=?,energy_percent=?,energy_source=?,operational_status=?,availability_status=?,last_telemetry_at=?,
+          speed_kph=?,energy_percent=?,energy_source=?,operational_status=?,
+          availability_status=CASE WHEN current_job_id IS NULL THEN ? ELSE availability_status END,last_telemetry_at=?,
           device_id=COALESCE(?,device_id),trackit_id=COALESCE(?,trackit_id),version=version+1
         WHERE id=? AND (last_telemetry_at IS NULL OR last_telemetry_at < ?)
         """, message.fleetNumber(), assetTypeId, plantId, message.latitude(), message.longitude(),
