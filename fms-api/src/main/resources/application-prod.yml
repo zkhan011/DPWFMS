@@ -1,0 +1,10 @@
+spring:
+  config.activate.on-profile: prod
+  jpa.show-sql: false
+server:
+  forward-headers-strategy: framework
+  error.include-message: never
+management.endpoint.health.show-details: when_authorized
+logging.level.root: INFO
+dpwfms:
+  development.simulator-enabled: false

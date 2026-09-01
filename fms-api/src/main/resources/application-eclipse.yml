@@ -1,0 +1,9 @@
+spring:
+  config.activate.on-profile: eclipse
+
+# Known local acceptance credential. This profile must never be activated with prod;
+# DevelopmentSampleUserSeeder is also guarded by "dev & !prod".
+dpwfms:
+  development:
+    sample-users-enabled: true
+    sample-user-password: ${DPWFMS_SAMPLE_USER_PASSWORD:DemoOnly!2026}
