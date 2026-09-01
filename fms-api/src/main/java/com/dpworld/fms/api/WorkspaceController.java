@@ -102,7 +102,7 @@ public class WorkspaceController {
     String sql = """
         SELECT a.id, a.fleet_number, t.code AS asset_type, p.name AS plant,
                a.latitude, a.longitude, a.heading, a.speed_kph, a.operational_status, a.availability_status,
-               a.energy_percent, a.current_job_id, a.driver_id, a.last_telemetry_at, a.enabled
+               a.energy_percent, a.energy_source, a.current_job_id, a.driver_id, a.last_telemetry_at, a.enabled
           FROM assets a JOIN asset_types t ON t.id=a.asset_type_id
           LEFT JOIN plants p ON p.id=a.plant_id
         """;

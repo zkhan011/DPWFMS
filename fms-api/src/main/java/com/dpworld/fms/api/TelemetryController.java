@@ -37,8 +37,11 @@ public class TelemetryController {
       @NotNull @DecimalMin("0") @DecimalMax("360") Double heading,
       @NotNull @DecimalMin("0") Double speedKph,
       @NotNull @DecimalMin("0") @DecimalMax("100") Double energyPercent,
+      @Pattern(regexp="DIESEL|PETROL|LNG|ELECTRIC|HYBRID") String energySource,
       @NotBlank @Pattern(regexp="IDLE|WORKING|PARKED|FUELLING|CHARGING|MAINTENANCE|OFFLINE|FAULT") String operationalStatus,
       @NotBlank @Pattern(regexp="AVAILABLE|RESERVED|ASSIGNED|UNAVAILABLE") String availabilityStatus,
       String deviceId,
-      String trackItId) {}
+      String trackItId) {
+    public PositionTelemetry { if (energySource == null) energySource = "DIESEL"; }
+  }
 }

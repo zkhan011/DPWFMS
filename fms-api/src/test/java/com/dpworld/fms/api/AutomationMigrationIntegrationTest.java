@@ -21,7 +21,7 @@ class AutomationMigrationIntegrationTest {
   @Test void migratesVersionedAutomationRulesAndUniquenessGuards() throws Exception {
     Flyway flyway = Flyway.configure().dataSource(postgres.getJdbcUrl(), postgres.getUsername(),
         postgres.getPassword()).load();
-    assertEquals(8, flyway.migrate().migrationsExecuted);
+    assertEquals(9, flyway.migrate().migrationsExecuted);
     try (var connection = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
          var statement = connection.createStatement()) {
       try (var rules = statement.executeQuery("SELECT count(*) FROM automation_rules")) {
@@ -65,6 +65,13 @@ class AutomationMigrationIntegrationTest {
           """)) {
         assertTrue(adminDemoGrants.next());
         assertEquals("{map.read,role.read,user.read}", adminDemoGrants.getString(1));
+      }
+      try (var chargingBay = statement.executeQuery("""
+          SELECT count(*) FROM service_bays b JOIN service_stations s ON s.id=b.station_id
+          WHERE b.code='JEA-CHARGE-BAY-01' AND s.station_type='CHARGING'
+          """)) {
+        assertTrue(chargingBay.next());
+        assertEquals(1, chargingBay.getInt(1));
       }
     }
     var dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
