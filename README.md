@@ -105,3 +105,28 @@ cd fms-web && npm run build
 Migration/concurrency integration tests require a Docker-accessible PostgreSQL
 instance through Testcontainers. RabbitMQ telemetry simulation is documented in
 [RABBITMQ_TELEMETRY.md](RABBITMQ_TELEMETRY.md).
+
+## Production geographic routing
+
+Operational routing is owned by `ProductionRoutingService`: it loads only an explicitly activated,
+approved PostgreSQL graph, runs the existing A*/Dijkstra engine, and persists every successful or
+failed route request. JavaScript only renders the returned WGS84 GeoJSON. No production graph or
+terminal coordinates are committed to this repository.
+
+1. Mount the terminal `.osm.pbf` and reviewed override YAML outside the application image.
+2. Set `ROUTING_GRAPH_FILE` and `ROUTING_OVERRIDE_FILE` (see `.env.example`).
+3. Validate and import through `/api/routing/graphs/validate` and `/api/routing/graphs/import`.
+4. Review, approve, then activate the DRAFT with the separately permissioned endpoints.
+
+Activation never happens during import. The previously active graph remains usable until activation,
+and rollback is performed by reviewing/approving (when necessary) and activating the desired retained
+version. See [Geographic routing operations](docs/geographic-routing.md) for configuration, permission,
+validation, map-matching, deployment and rollback details.
+
+Routing checks are included in the normal reactor and web commands:
+
+```bash
+./mvnw -B clean test
+./mvnw -B -DskipTests package
+cd fms-web && npm ci && npm run build
+```

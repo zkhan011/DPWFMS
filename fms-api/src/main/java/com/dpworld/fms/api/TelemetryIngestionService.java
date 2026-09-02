@@ -16,12 +16,15 @@ public class TelemetryIngestionService {
   private final AutomaticChargingService charging;
   private final AutomaticParkingAssignmentService parking;
   private final AssignmentTelemetryReconciler assignmentReconciler;
+  private final TelemetryMapMatchingService mapMatching;
   public TelemetryIngestionService(JdbcTemplate jdbc, AutomaticChargingService charging,
-      AutomaticParkingAssignmentService parking, AssignmentTelemetryReconciler assignmentReconciler) {
+      AutomaticParkingAssignmentService parking, AssignmentTelemetryReconciler assignmentReconciler,
+      TelemetryMapMatchingService mapMatching) {
     this.jdbc = jdbc;
     this.charging = charging;
     this.parking = parking;
     this.assignmentReconciler = assignmentReconciler;
+    this.mapMatching = mapMatching;
   }
 
   @Transactional
@@ -78,6 +81,7 @@ public class TelemetryIngestionService {
         """, assetId, timestamp(message.occurredAt()), message.latitude(), message.longitude(),
         message.heading(), message.speedKph());
     jdbc.update("UPDATE integration_messages SET status='PROCESSED',processed_at=now() WHERE id=?", integrationId);
+    mapMatching.match(assetId, message.latitude(), message.longitude(), message.heading(), message.occurredAt());
     assignmentReconciler.reconcile(assetId, message.latitude(), message.longitude(),
         message.energyPercent(), message.operationalStatus());
     UUID chargingJobId = charging.evaluate(assetId, message.energySource(), message.energyPercent(),

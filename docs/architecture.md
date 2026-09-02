@@ -61,3 +61,10 @@ erDiagram
 5. **Administration and assurance:** full visual graph editor, role screens, offline tile packaging, 1,500-asset load test, penetration/failover/restore exercises.
 
 The application is structured for these increments without circular dependencies; limitations are explicit rather than represented as placeholder code.
+
+## Production geographic routing
+
+The geographic graph lifecycle, PBF importer, controlled approval, PostgreSQL
+repositories, persisted routes, and logical GPS map matching are described in
+[`geographic-routing.md`](geographic-routing.md). The existing DPWFMS routing
+engine remains authoritative; web clients only render backend GeoJSON.

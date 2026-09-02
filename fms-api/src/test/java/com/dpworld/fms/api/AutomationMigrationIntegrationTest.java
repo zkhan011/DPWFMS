@@ -21,7 +21,7 @@ class AutomationMigrationIntegrationTest {
   @Test void migratesVersionedAutomationRulesAndUniquenessGuards() throws Exception {
     Flyway flyway = Flyway.configure().dataSource(postgres.getJdbcUrl(), postgres.getUsername(),
         postgres.getPassword()).load();
-    assertEquals(10, flyway.migrate().migrationsExecuted);
+    assertEquals(11, flyway.migrate().migrationsExecuted);
     try (var connection = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
          var statement = connection.createStatement()) {
       try (var rules = statement.executeQuery("SELECT count(*) FROM automation_rules")) {
@@ -55,7 +55,7 @@ class AutomationMigrationIntegrationTest {
           WHERE u.created_by='flyway-sample'
           """)) {
         assertTrue(grants.next());
-        assertEquals(49, grants.getInt(1));
+        assertEquals(55, grants.getInt(1));
       }
       try (var adminDemoGrants = statement.executeQuery("""
           SELECT array_agg(p.code ORDER BY p.code) FROM users u
@@ -72,6 +72,20 @@ class AutomationMigrationIntegrationTest {
           """)) {
         assertTrue(chargingBay.next());
         assertEquals(1, chargingBay.getInt(1));
+      }
+      try (var routingSchema = statement.executeQuery("""
+          SELECT count(*) FROM information_schema.columns
+          WHERE table_name='routing_graph_versions'
+            AND column_name IN ('source_checksum','import_report','approved_at','activated_at')
+          """)) {
+        assertTrue(routingSchema.next());
+        assertEquals(4, routingSchema.getInt(1));
+      }
+      try (var routingPermissions = statement.executeQuery("""
+          SELECT count(*) FROM permissions WHERE code LIKE 'routing.%'
+          """)) {
+        assertTrue(routingPermissions.next());
+        assertEquals(6, routingPermissions.getInt(1));
       }
     }
     var dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
