@@ -1,0 +1,2 @@
+package com.dpworld.fms.routing;
+public final class GeoJsonRoutes {private GeoJsonRoutes(){}public static String lineString(Route route){String coordinates=route.nodes().stream().map(n->"["+n.point().longitude()+","+n.point().latitude()+"]").collect(java.util.stream.Collectors.joining(","));return "{\"type\":\"Feature\",\"properties\":{},\"geometry\":{\"type\":\"LineString\",\"coordinates\":["+coordinates+"]}}";}}

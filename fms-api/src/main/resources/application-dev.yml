@@ -1,0 +1,9 @@
+spring:
+  config.activate.on-profile: dev
+  jpa.show-sql: false
+logging.level.com.dpworld.fms: DEBUG
+dpwfms:
+  development:
+    simulator-enabled: ${SIMULATOR_ENABLED:true}
+    sample-users-enabled: ${DPWFMS_SAMPLE_USERS_ENABLED:false}
+  cors.allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
