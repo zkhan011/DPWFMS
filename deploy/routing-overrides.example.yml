@@ -1,0 +1,9 @@
+disabledRoads: []
+directionOverrides: {}
+speedOverrides: {}
+vehicleRestrictions: {}
+surveyedPrivateNodes: []
+surveyedPrivateSegments: []
+parkingNodes: {}
+chargingNodes: {}
+fuelingNodes: {}
