@@ -91,3 +91,18 @@ or on Windows:
 ```powershell
 .\scripts\stop-eclipse-infrastructure.ps1
 ```
+
+## Osmosis imports are unresolved
+
+The map importer uses classes such as
+`org.openstreetmap.osmosis.core.container.v0_6.EntityContainer`. The
+`fms-map-import` module declares both `osmosis-core` and `osmosis-pbf`; do not add
+JAR files manually to the Eclipse build path. After pulling dependency changes:
+
+1. Right-click the root project and select **Maven > Update Project...**.
+2. Select all DPWFMS modules, enable **Force Update of Snapshots/Releases**, and
+   choose **OK**.
+3. Run **Project > Clean...** if Eclipse still shows stale import errors.
+
+From a terminal, `./mvnw -pl fms-map-import -am test` performs the equivalent
+module dependency and compilation check.

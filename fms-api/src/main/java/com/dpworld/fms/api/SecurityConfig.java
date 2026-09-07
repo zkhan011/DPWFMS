@@ -36,7 +36,8 @@ public class SecurityConfig {
       "user.manage", "role.read", "role.manage", "audit.read", "system.configure",
       "parking.assign", "parking.override", "parking.bay.manage", "parking.automation.run",
       "charging.assign", "charging.override", "charging.station.manage", "charging.automation.run",
-      "parameters.read", "parameters.edit", "parameters.rollback");
+      "parameters.read", "parameters.edit", "parameters.rollback",
+      "trackit.telemetry.ingest", "trackit.telemetry.read");
 
   @Bean
   SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {

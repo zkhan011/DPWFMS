@@ -12,7 +12,8 @@ class ControllerParameterNameTest {
   @Test
   void requestParametersHaveExplicitNamesIndependentOfCompilerMetadata() {
     List<Class<?>> controllers = List.of(AutomationController.class, OperationsController.class,
-        TelemetryController.class, UserAdministrationController.class, WorkspaceController.class);
+        TelemetryController.class, TrackItTelemetryController.class,
+        UserAdministrationController.class, WorkspaceController.class);
 
     controllers.stream().flatMap(controller -> List.of(controller.getDeclaredMethods()).stream())
         .flatMap(method -> List.of(method.getParameters()).stream())

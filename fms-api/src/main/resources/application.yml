@@ -31,6 +31,16 @@ management:
   endpoints.web.exposure.include: health,info,prometheus,metrics
   endpoint.health.probes.enabled: true
 springdoc.swagger-ui.path: /swagger-ui.html
+trackit:
+  telemetry:
+    auto-create-assets: ${TRACKIT_TELEMETRY_AUTO_CREATE_ASSETS:false}
+    stale-threshold-seconds: ${TRACKIT_TELEMETRY_STALE_SECONDS:120}
+    offline-threshold-seconds: ${TRACKIT_TELEMETRY_OFFLINE_SECONDS:600}
+    retention-days: ${TRACKIT_TELEMETRY_RETENTION_DAYS:90}
+    retention-cron: ${TRACKIT_TELEMETRY_RETENTION_CRON:0 15 2 * * *}
+    fuel-consumption-rate-unit: ${TRACKIT_FUEL_RATE_UNIT:}
+    can-metadata-json: '${TRACKIT_CAN_METADATA_JSON:{}}'
+    alert-low-battery-voltage: ${TRACKIT_ALERT_LOW_BATTERY_VOLTAGE:}
 dpwfms:
   automation:
     evaluation-interval-ms: ${AUTOMATION_EVALUATION_INTERVAL_MS:30000}

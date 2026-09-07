@@ -4,9 +4,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.DriverManager;
+import java.sql.Timestamp;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.List;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -21,7 +29,7 @@ class AutomationMigrationIntegrationTest {
   @Test void migratesVersionedAutomationRulesAndUniquenessGuards() throws Exception {
     Flyway flyway = Flyway.configure().dataSource(postgres.getJdbcUrl(), postgres.getUsername(),
         postgres.getPassword()).load();
-    assertEquals(11, flyway.migrate().migrationsExecuted);
+    assertEquals(12, flyway.migrate().migrationsExecuted);
     try (var connection = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
          var statement = connection.createStatement()) {
       try (var rules = statement.executeQuery("SELECT count(*) FROM automation_rules")) {
@@ -55,7 +63,7 @@ class AutomationMigrationIntegrationTest {
           WHERE u.created_by='flyway-sample'
           """)) {
         assertTrue(grants.next());
-        assertEquals(55, grants.getInt(1));
+        assertEquals(57, grants.getInt(1));
       }
       try (var adminDemoGrants = statement.executeQuery("""
           SELECT array_agg(p.code ORDER BY p.code) FROM users u
@@ -87,6 +95,14 @@ class AutomationMigrationIntegrationTest {
         assertTrue(routingPermissions.next());
         assertEquals(6, routingPermissions.getInt(1));
       }
+      try (var trackItSchema = statement.executeQuery("""
+          SELECT count(*) FROM information_schema.tables
+          WHERE table_name IN ('trackit_telemetry_batches','trackit_asset_metadata',
+            'trackit_telemetry_history','trackit_telemetry_latest','trackit_telemetry_batch_results')
+          """)) {
+        assertTrue(trackItSchema.next());
+        assertEquals(5, trackItSchema.getInt(1));
+      }
     }
     var dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
     var jdbc = new JdbcTemplate(dataSource);
@@ -103,5 +119,43 @@ class AutomationMigrationIntegrationTest {
         """);
     assertTrue(json.writeValueAsString(role).contains("map.read"));
     assertTrue(json.writeValueAsString(mapConfiguration).contains("vehicles"));
+
+    ObjectMapper telemetryJson = new ObjectMapper().registerModule(new JavaTimeModule());
+    var eventPublisher = org.mockito.Mockito.mock(TrackItTelemetryEvents.class);
+    var transactions = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
+    var service = new TrackItTelemetryIngestionService(jdbc, telemetryJson, transactions,
+        eventPublisher, Clock.fixed(Instant.parse("2026-09-07T08:00:10Z"), ZoneOffset.UTC), true);
+    var valid = telemetryJson.readTree("""
+        {"AssetID":"TEST-TT-1","AssetNumber":"TEST-1","Timestamp":"2026-09-07T08:00:00Z",
+         "LastUpdatedTime":"2026-09-07T08:00:03Z","Latitude":24.99,"Longitude":55.03,
+         "Speed":0,"BatteryVoltage":24,"DataAvailabilityFlag":{"GPSAvailable":true,
+         "FuelDataAvailable":false,"EngineDataAvailable":false,"CANDataAvailable":true},
+         "CANParameters":[{"Name":"Current Gear","Value":-1}]}
+        """);
+    var invalid = telemetryJson.readTree("""
+        {"AssetID":"TEST-TT-2","AssetNumber":"TEST-2","Timestamp":"2026-09-07T08:00:00Z",
+         "LastUpdatedTime":"2026-09-07T08:00:03Z","Latitude":0,"Longitude":0,"Speed":-1,
+         "DataAvailabilityFlag":{"GPSAvailable":true,"FuelDataAvailable":false,
+         "EngineDataAvailable":false,"CANDataAvailable":false}}
+        """);
+    var partial = service.ingest(List.of(valid, invalid), "integration-test");
+    assertEquals(2, partial.received());
+    assertEquals(1, partial.accepted());
+    assertEquals(1, partial.rejected());
+    assertTrue(partial.results().get(1).message().contains("0,0"));
+    org.mockito.Mockito.verify(eventPublisher).publish(org.mockito.ArgumentMatchers.any());
+    assertEquals("DUPLICATE", service.ingest(List.of(valid), "integration-test").results().getFirst().status());
+
+    var older = telemetryJson.readTree(valid.toString().replace("08:00:00Z", "07:59:00Z"));
+    assertEquals("OUT_OF_ORDER", service.ingest(List.of(older), "integration-test").results().getFirst().status());
+    assertEquals(Timestamp.valueOf("2026-09-07 08:00:00"), jdbc.queryForObject(
+        "SELECT measurement_timestamp AT TIME ZONE 'UTC' FROM trackit_telemetry_latest WHERE external_asset_id='TEST-TT-1'",
+        Timestamp.class));
+
+    var noCreate = new TrackItTelemetryIngestionService(jdbc, telemetryJson, transactions,
+        eventPublisher, Clock.systemUTC(), false);
+    var unknown = telemetryJson.readTree(valid.toString().replace("TEST-TT-1", "UNREGISTERED").replace("TEST-1", "UNREGISTERED-1"));
+    assertEquals("REJECTED", noCreate.ingest(List.of(unknown), "integration-test").results().getFirst().status());
+    assertEquals("ASSET_NOT_REGISTERED", noCreate.ingest(List.of(unknown), "integration-test-2").results().getFirst().message());
   }
 }

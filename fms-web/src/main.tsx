@@ -18,10 +18,11 @@ const Jobs = lazy(() => import('./pages/JobsPage'));
 const Alerts = lazy(() => import('./pages/AlertsPage'));
 const Audit = lazy(() => import('./pages/AuditPage'));
 const Administration = lazy(() => import('./pages/AdministrationPage'));
+const FleetTelemetry = lazy(() => import('./pages/FleetTelemetryPage'));
 
 const routes: Record<string, React.LazyExoticComponent<() => React.ReactElement>> = {
   overview: Overview, plant: Plant, map: MapPage, vehicles: Vehicles,
-  'control-center': ControlCenter, reports: Reports, parking: Parking, charging: Charging, parameters: Parameters, jobs: Jobs, alerts: Alerts, audit: Audit, administration: Administration
+  'control-center': ControlCenter, reports: Reports, parking: Parking, charging: Charging, parameters: Parameters, jobs: Jobs, alerts: Alerts, audit: Audit, administration: Administration, telemetry: FleetTelemetry
 };
 
 function currentRoute() { return location.hash.replace(/^#\/?/, '').split('/')[0] || 'overview'; }

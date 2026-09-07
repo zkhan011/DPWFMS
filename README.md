@@ -130,3 +130,11 @@ Routing checks are included in the normal reactor and web commands:
 ./mvnw -B -DskipTests package
 cd fms-web && npm ci && npm run build
 ```
+
+## TrackIT fleet telemetry
+
+TrackIT PascalCase telemetry supports single-record and partial-success batch ingestion while
+preserving immutable history and a monotonic last-known snapshot. Open **Fleet Telemetry** in the
+sidebar for server-filtered status, latency, availability and dynamic CAN details. See
+[TrackIT telemetry integration](docs/trackit-telemetry.md) for the contract, authentication,
+validation, timestamp semantics, idempotency, retention, configuration and sanitized curl fixture.

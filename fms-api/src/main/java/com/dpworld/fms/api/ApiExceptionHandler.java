@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -22,6 +23,11 @@ public class ApiExceptionHandler {
         .map(error -> error.getField() + " " + error.getDefaultMessage()).findFirst()
         .orElse("request validation failed");
     return problem(HttpStatus.BAD_REQUEST, detail);
+  }
+
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  ResponseEntity<Map<String, Object>> malformedJson(HttpMessageNotReadableException exception) {
+    return problem(HttpStatus.BAD_REQUEST, "Malformed JSON request");
   }
 
   @ExceptionHandler(AccessDeniedException.class)
