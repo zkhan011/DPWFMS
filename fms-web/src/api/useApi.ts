@@ -1,0 +1,2 @@
+import { useEffect, useState } from 'react';import { api, ApiState } from './client';
+export function useApi<T>(path:string):ApiState<T>{const[state,setState]=useState<ApiState<T>>({loading:true});useEffect(()=>{let live=true;setState({loading:true});api<T>(path).then(data=>live&&setState({data,loading:false})).catch(e=>live&&setState({loading:false,error:e instanceof Error?e.message:'Request failed'}));return()=>{live=false}},[path]);return state}

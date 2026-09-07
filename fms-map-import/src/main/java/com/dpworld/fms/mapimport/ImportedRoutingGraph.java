@@ -1,0 +1,3 @@
+package com.dpworld.fms.mapimport;
+import java.util.*;
+public record ImportedRoutingGraph(List<Node>nodes,List<Segment>segments,ImportReport report){public record Node(UUID id,String code,Long osmNodeId,double latitude,double longitude,String sourceKind,Map<String,String>tags){}public record Segment(UUID id,String code,Long osmWayId,int sequence,String from,String to,double distanceMetres,double speedKph,String direction,boolean blocked,Map<String,String>tags,List<String>allowedAssetTypes,String geometryGeoJson){}public record ImportReport(boolean valid,int nodeCount,int segmentCount,int componentCount,List<String>errors,List<String>warnings,Map<String,String>resourceNodes){} }

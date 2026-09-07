@@ -1,0 +1,10 @@
+package com.dpworld.fms.routing;
+import java.time.Instant;import java.util.List;import java.util.UUID;
+public final class ProductionRoutingService {
+ private final RoutingGraphRepository graphs;private final PlannedRouteRepository routes;
+ public ProductionRoutingService(RoutingGraphRepository graphs,PlannedRouteRepository routes){this.graphs=graphs;this.routes=routes;}
+ public Result calculate(RouteRequest request,UUID jobId){var graph=graphs.findActiveApproved().orElse(null);if(graph==null)return Result.invalid("NO_ACTIVE_APPROVED_GRAPH");return calculate(graph,request,jobId,true);}
+ public Result preview(UUID graphId,RouteRequest request){var graph=graphs.findById(graphId).orElse(null);if(graph==null)return Result.invalid("GRAPH_NOT_FOUND");return calculate(graph,request,null,false);}
+ private Result calculate(RoutingGraphRepository.RoutingGraph graph,RouteRequest request,UUID jobId,boolean persist){try{var route=new AStarRoutingEngine(graph.nodes(),graph.segments()).calculate(request);UUID id=persist?UUID.randomUUID():null;String geoJson=GeoJsonRoutes.lineString(route);if(persist)routes.save(new PlannedRouteRepository.PlannedRoute(id,jobId,graph.id(),graph.version(),request.from(),request.to(),route.totalDistanceMetres(),route.estimatedTravelSeconds(),route.segments().stream().map(RoadSegment::id).toList(),geoJson,null,Instant.now()));return new Result(true,id,graph.id(),graph.version(),route,null,geoJson);}catch(IllegalArgumentException|RouteNotFoundException exception){UUID id=persist?UUID.randomUUID():null;if(persist)routes.save(new PlannedRouteRepository.PlannedRoute(id,jobId,graph.id(),graph.version(),request.from(),request.to(),0,0,List.of(),null,exception.getMessage(),Instant.now()));return new Result(false,id,graph.id(),graph.version(),null,exception.getMessage(),null);}}
+ public record Result(boolean valid,UUID routeId,UUID graphId,long graphVersion,Route route,String failureReason,String geoJson){public static Result invalid(String reason){return new Result(false,null,null,0,null,reason,null);}}
+}

@@ -1,0 +1,33 @@
+[
+  {
+    "AssetID": "TEST-TT-001",
+    "AssetNumber": "TEST-001",
+    "Make": "Example Make",
+    "Model": "Example Model",
+    "Timestamp": "2026-09-07T08:00:00Z",
+    "LastUpdatedTime": "2026-09-07T08:00:03Z",
+    "Latitude": 24.9901,
+    "Longitude": 55.0301,
+    "Speed": 4.5,
+    "BatteryVoltage": 25.2,
+    "FuelConsumptionRate": 2.75,
+    "TotalFuelUsed": 12345.678,
+    "EngineHours": 9876.5,
+    "Location": {
+      "LocationMappingStatus": "MAPPED",
+      "LocationType": "TEST_AREA",
+      "LocationName": "Synthetic test location",
+      "LocationCode": "TEST-AREA-01"
+    },
+    "DataAvailabilityFlag": {
+      "GPSAvailable": true,
+      "FuelDataAvailable": true,
+      "EngineDataAvailable": true,
+      "CANDataAvailable": true
+    },
+    "CANParameters": [
+      { "Name": "Current Gear", "Value": -1 },
+      { "Name": "Synthetic Unknown Parameter", "Value": "source-value" }
+    ]
+  }
+]

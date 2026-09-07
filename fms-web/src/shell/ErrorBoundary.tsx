@@ -1,0 +1,2 @@
+import React from 'react';
+export class ErrorBoundary extends React.Component<React.PropsWithChildren, {failed:boolean}>{state={failed:false};static getDerivedStateFromError(){return{failed:true}}render(){return this.state.failed?<div className="page-state error"><h2>Workspace unavailable</h2><p>The view could not be rendered. Reload or contact the control center.</p><button onClick={()=>location.reload()}>Reload</button></div>:this.props.children}}

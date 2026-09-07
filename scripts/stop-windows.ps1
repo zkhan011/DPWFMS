@@ -1,0 +1,1 @@
+. "$PSScriptRoot/common-windows.ps1";foreach($name in 'backend','frontend'){$file=Join-Path $Runtime "$name.pid";if(Test-Path $file){$id=Get-Content $file;Stop-Process -Id $id -Force -ErrorAction SilentlyContinue;Remove-Item $file;Write-Host "$name stopped"}}

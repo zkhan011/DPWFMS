@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.jdt.launching.localJavaApplication">
+  <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+    <listEntry value="/fms-api/src/main/java/com/dpworld/fms/api/DpwFmsApplication.java"/>
+  </listAttribute>
+  <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+    <listEntry value="1"/>
+  </listAttribute>
+  <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="com.dpworld.fms.api.DpwFmsApplication"/>
+  <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="--spring.profiles.active=dev,eclipse --spring.config.import=optional:file:.env[.properties]"/>
+  <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="fms-api"/>
+  <stringAttribute key="org.eclipse.jdt.launching.WORKING_DIRECTORY" value="${workspace_loc:/fms-api}/.."/>
+</launchConfiguration>

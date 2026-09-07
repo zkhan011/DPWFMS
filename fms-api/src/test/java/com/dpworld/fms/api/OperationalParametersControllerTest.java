@@ -1,0 +1,5 @@
+package com.dpworld.fms.api;
+import static org.junit.jupiter.api.Assertions.*;import com.fasterxml.jackson.databind.ObjectMapper;import java.util.*;import org.junit.jupiter.api.Test;
+class OperationalParametersControllerTest{
+ @Test void rejectsUnsafeThresholdsTimeoutsAndWeights(){var controller=new OperationalParametersController(null,new ObjectMapper());Map<String,Object> values=new HashMap<>();values.put("lowBatteryThresholdPercentage",20);values.put("criticalBatteryThresholdPercentage",30);values.put("defaultTargetBatteryPercentage",15);values.put("parkingAssignmentScanIntervalSeconds",30);values.put("parkingReservationTimeoutSeconds",20);values.put("chargingAssignmentScanIntervalSeconds",30);values.put("chargingReservationTimeoutSeconds",20);values.put("parkingDistanceWeight",0);values.put("nextJobDistanceWeight",0);values.put("parkingCongestionWeight",0);values.put("parkingUtilizationWeight",0);values.put("parkingEnergyWeight",0);values.put("chargingDistanceWeight",0);values.put("chargingQueueWeight",0);values.put("chargingUtilizationWeight",0);values.put("chargingEnergyRiskWeight",0);assertTrue(controller.errors(values).size()>=6);}
+}
