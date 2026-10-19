@@ -78,7 +78,7 @@ try {
     Write-Host ""
     Write-Host "Next, build and run the API from the repository root:"
     Write-Host "  .\mvnw.cmd -pl fms-api -am clean package -DskipTests"
-    Write-Host "  java -jar .\fms-api\target\fms-api-1.0.0-SNAPSHOT.jar --spring.profiles.active=dev,eclipse"
+    Write-Host "  java -jar .\fms-api\target\fms-api-1.0.0-SNAPSHOT.jar --spring.profiles.active=dev,eclipse --spring.config.import=optional:file:.env[.properties]"
     Write-Host ""
     Write-Host "The API needs local PostgreSQL, Redis, and RabbitMQ services running."
     Write-Host "Start the frontend separately with: cd fms-web; npm ci; npm run dev"
