@@ -29,7 +29,7 @@ Provider settings are stored in `map_configurations`; the database style URL tak
 
 ## Direct PMTiles
 
-1. Run `scripts/install-pmtiles-map-assets.sh /path/to/Map.zip` from the project root.
+1. On Windows PowerShell, run `scripts\\install-pmtiles-map-assets.ps1 -MapZipPath C:\\path\\to\\Map.zip`. On Linux/macOS, run `bash scripts/install-pmtiles-map-assets.sh /path/to/Map.zip`.
 2. Confirm `map-assets/style.json`, `map-assets/dubai_area.pmtiles`, and `map-assets/fonts/Roboto Regular/` exist.
 3. Start or rebuild DPW FMS with Docker Compose. The archive is mounted read-only into the Java API container.
 4. Open the Map page. The seeded database configuration points to `/api/maps/style.json`.
