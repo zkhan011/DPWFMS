@@ -64,7 +64,7 @@ function loadGoogle(key:string):Promise<void>{if(googlePromise)return googleProm
 function escapeHtml(value:string){return value.replace(/[&<>'"]/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[character]!))}
 
 
-import type { GeoJSONSource, MapLayerMouseEvent, Popup as MapPopup } from 'maplibre-gl';
+import type { GeoJSONSource, MapLayerMouseEvent, Popup as MapPopup, StyleSpecification } from 'maplibre-gl';
 import type { Protocol as PmtilesProtocol } from 'pmtiles';
 import { authHeader } from '../api/client';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -98,7 +98,7 @@ class PmtilesProvider implements MapProvider {
     };
     const styleResponse = await fetch(resolvedStyleUrl, { headers: javaMapHeaders(resolvedStyleUrl.href) });
     if (!styleResponse.ok) throw new Error('Map style request failed (' + styleResponse.status + ')');
-    const styleDocument = await styleResponse.json() as { sources?: Record<string, { url?: string; tiles?: string[] }> };
+    const styleDocument = await styleResponse.json() as unknown as StyleSpecification & { sources?: Record<string, { url?: string; tiles?: string[] }> };
     const archiveUrls = new Set<string>();
     Object.values(styleDocument.sources ?? {}).forEach(source => {
       if (source.url?.startsWith('pmtiles://')) {
