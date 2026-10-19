@@ -29,7 +29,7 @@ Provider settings are stored in `map_configurations`; the database style URL tak
 
 ## Direct PMTiles
 
-1. On Windows PowerShell, run `scripts\\install-pmtiles-map-assets.ps1 -MapZipPath C:\\path\\to\\Map.zip`. On Linux/macOS, run `bash scripts/install-pmtiles-map-assets.sh /path/to/Map.zip`.
+1. On Windows PowerShell, run `./scripts/install-pmtiles-map-assets.ps1 -MapZipPath C:/path/to/Map.zip`. On Linux/macOS, run `bash scripts/install-pmtiles-map-assets.sh /path/to/Map.zip`.
 2. Confirm `map-assets/style.json`, `map-assets/dubai_area.pmtiles`, and `map-assets/fonts/Roboto Regular/` exist.
 3. For a local run, the Java API now reads `./map-assets` by default; set `MAP_ASSETS_DIRECTORY` to another absolute path if needed. Start PostgreSQL, Redis, and RabbitMQ locally, then run the API and frontend from the host. For Docker, Compose mounts the folder read-only at `/app/maps`.
 4. Open the Map page. The seeded database configuration points to `/api/maps/style.json`.
