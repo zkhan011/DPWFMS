@@ -9,7 +9,7 @@ DPW FMS renders direct vector tiles from a PMTiles archive with MapLibre GL JS a
 | `osm` | OpenStreetMap-compatible raster tiles |
 | `google`, `mapbox` | Existing provider options and fallback behavior |
 
-The seeded Jebel Ali map uses **Direct PMTiles (MapLibre)** and `/api/maps/style.json`. The API serves assets from `MAP_ASSETS_DIRECTORY` (local default `./map-assets`; Docker Compose mounts `./map-assets` to `/app/maps`). Place `style.json`, `dubai_area.pmtiles`, and the `fonts` directory there. Use the included `scripts/install-pmtiles-map-assets.sh` to extract those files from the supplied `Map.zip`.
+The seeded Jebel Ali map uses **Direct PMTiles (MapLibre)** and `/api/maps/style.json`. The Java API searches for `map-assets` from its working directory up through parent folders, which supports launching from the repository root or the `fms-api` module. Set `MAP_ASSETS_DIRECTORY` to an absolute path to override discovery. Docker Compose mounts `./map-assets` at `/app/maps`. Place `style.json`, `dubai_area.pmtiles`, and the `fonts` directory there. Use the included `scripts/install-pmtiles-map-assets.sh` to extract those files from the supplied `Map.zip`.
 
 The style should reference the archive with a PMTiles URL such as `pmtiles://dubai_area.pmtiles`. The installer adjusts the glyph URL to `/api/maps/fonts/{fontstack}/{range}.pbf`. Java/Spring serves the archive using byte-range responses, which lets the browser read only the tile ranges it needs. Map assets are served by the Java API behind the same Basic authentication used by DPW FMS. The map adapter attaches the current session credentials only to same-origin `/api/maps/**` requests; it does not send them to external hosts.
 
@@ -17,7 +17,7 @@ The provider retains DPW FMS fleet filters, status colors, heading-aware vehicle
 
 | Variable | Values/default |
 |---|---|
-| `MAP_ASSETS_DIRECTORY` | Java API asset directory; local default `./map-assets`, Docker path `/app/maps` |
+| `MAP_ASSETS_DIRECTORY` | Optional explicit Java API asset directory; local auto-discovery checks `map-assets`, Docker uses `/app/maps` |
 | `VITE_PMTILES_STYLE_URL` | `/api/maps/style.json` |
 | `VITE_GOOGLE_MAPS_API_KEY` | Browser-restricted key; empty by default |
 | `VITE_MAPBOX_ACCESS_TOKEN` | Public browser token; empty by default |
