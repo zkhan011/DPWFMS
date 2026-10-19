@@ -1,31 +1,44 @@
 # Map configuration
 
-DPW FMS separates operational layers from the provider adapter. `MapProvider` selects offline XYZ, OSM, Mapbox-compatible, or Google configuration. If a Google key or Mapbox token is absent, the client falls back to OSM while online and offline XYZ while disconnected; startup never depends on a paid API.
+DPW FMS renders direct vector tiles from a PMTiles archive with MapLibre GL JS and the PMTiles protocol. The Java API serves the MapLibre style, archive, glyphs, and referenced assets from its local map-assets directory at `/api/maps/**`. No external map host or .NET style URL is required.
+
+| Provider | Use |
+|---|---|
+| `pmtiles` | Direct vector tile access from a `.pmtiles` archive through a MapLibre style |
+| `offline` | Raster XYZ tiles |
+| `osm` | OpenStreetMap-compatible raster tiles |
+| `google`, `mapbox` | Existing provider options and fallback behavior |
+
+The seeded Jebel Ali map uses **Direct PMTiles (MapLibre)** and `/api/maps/style.json`. The API serves assets from `MAP_ASSETS_DIRECTORY` (default `./maps`; Docker Compose mounts `./map-assets` to `/app/maps`). Place `style.json`, `dubai_area.pmtiles`, and the `fonts` directory there. Use the included `scripts/install-pmtiles-map-assets.sh` to extract those files from the supplied `Map.zip`.
+
+The style should reference the archive with a PMTiles URL such as `pmtiles://dubai_area.pmtiles`. The installer adjusts the glyph URL to `/api/maps/fonts/{fontstack}/{range}.pbf`. Java/Spring serves the archive using byte-range responses, which lets the browser read only the tile ranges it needs. Map assets are served by the Java API behind the same Basic authentication used by DPW FMS. The map adapter attaches the current session credentials only to same-origin `/api/maps/**` requests; it does not send them to external hosts.
+
+The provider retains DPW FMS fleet filters, status colors, heading-aware vehicle markers, clustering, selection popups, telemetry drawer, current route/trail, and parking, charging, fueling, and geofence layers. The configured PMTiles style controls the basemap appearance and attribution.
 
 | Variable | Values/default |
 |---|---|
-| `MAP_PROVIDER` | `offline`, `osm`, `google`, `mapbox`; default `offline` |
+| `MAP_ASSETS_DIRECTORY` | Java API asset directory; Docker default `/app/maps` |
+| `VITE_PMTILES_STYLE_URL` | `/api/maps/style.json` |
 | `VITE_GOOGLE_MAPS_API_KEY` | Browser-restricted key; empty by default |
 | `VITE_MAPBOX_ACCESS_TOKEN` | Public browser token; empty by default |
 | `VITE_OSM_TILE_URL` | OSM-compatible XYZ URL |
-| `OFFLINE_TILE_URL` | `/tiles/{z}/{x}/{y}.png` |
-| `OFFLINE_STYLE_URL` | `/maps/style.json` |
+| `VITE_OFFLINE_TILE_URL` | `/tiles/{z}/{x}/{y}.png` |
 | defaults | Jebel Ali `24.9857,55.0273`, zoom `12` |
 
-Provider settings are stored in `map_configurations`; the saved database row—not `MAP_PROVIDER` alone—is what the browser requests at runtime. Open **Administration → Map provider** to change the provider, center, zoom, XYZ/style URLs, and layers. Reopen Map after saving. `map.read` is required to view it, `vehicle.read` is required for telemetry markers, and `map.configure` is required to edit it.
+Provider settings are stored in `map_configurations`; the database style URL takes precedence over build-time defaults. `map.read` is required to view the DPW FMS map and `map.configure` is required to edit it. Map style, archive, fonts, and assets remain behind API authentication.
 
-## OpenStreetMap
+## Direct PMTiles
 
-1. Select `OpenStreetMap` in **Administration → Map provider**.
-2. Use `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png` for development, or the URL of an organization-operated OSM-compatible tile service for production.
-3. Set Jebel Ali defaults to latitude `24.9857`, longitude `55.0273`, zoom `12` and save.
-4. Ensure the frontend deployment can reach the tile host and its Content Security Policy permits images from it.
-5. Keep visible OpenStreetMap attribution and comply with the selected tile service's usage policy. The public OSM tile service is not intended for heavy production fleet traffic or offline bulk download.
+1. Run `scripts/install-pmtiles-map-assets.sh /path/to/Map.zip` from the project root.
+2. Confirm `map-assets/style.json`, `map-assets/dubai_area.pmtiles`, and `map-assets/fonts/Roboto Regular/` exist.
+3. Start or rebuild DPW FMS with Docker Compose. The archive is mounted read-only into the Java API container.
+4. Open the Map page. The seeded database configuration points to `/api/maps/style.json`.
+5. Confirm the map loads and that the style attribution is visible.
 
-`VITE_OSM_TILE_URL` is a frontend build-time default. A non-empty `tile_url` saved in the database takes precedence.
+The archive is not committed to Git. It is served by the Java API from the mounted map-assets directory.
 
-## Google Maps
+## Other providers
 
-Google requires two coordinated settings: select `google` in the database-backed Administration screen and provide `VITE_GOOGLE_MAPS_API_KEY` while building the frontend. The backend secret reference is metadata only and does not send a secret to the browser. If the build-time key is absent, DPW FMS deliberately falls back to OSM/offline tiles.
+Use an organization-operated OSM-compatible tile service for production and retain its attribution. Google and Mapbox credentials are configured at frontend build time; when absent, the existing provider fallback behavior remains.
 
-See [Google Maps setup](GOOGLE_MAPS_SETUP.md), [offline maps](OFFLINE_MAP_SETUP.md), and [mock-data testing](MOCK_DATA_TESTING.md).
+See [offline maps](OFFLINE_MAP_SETUP.md), [Google Maps setup](GOOGLE_MAPS_SETUP.md), and [mock-data testing](MOCK_DATA_TESTING.md).

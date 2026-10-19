@@ -12,3 +12,6 @@ fms-web/vite.config.d.ts
 runtime/
 logs/
 .DS_Store
+
+/map-assets/*
+!/map-assets/README.md

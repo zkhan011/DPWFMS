@@ -1,6 +1,6 @@
 import L from 'leaflet';
 
-export type MapConfiguration={provider:'google'|'osm'|'offline'|'mapbox';default_latitude:number;default_longitude:number;default_zoom:number;tile_url?:string;style_url?:string};
+export type MapConfiguration={provider:'google'|'osm'|'offline'|'mapbox'|'pmtiles';default_latitude:number;default_longitude:number;default_zoom:number;tile_url?:string;style_url?:string};
 export type MapVehicle={name:string;latitude:number;longitude:number;status:string;stale:boolean;heading?:number;speedKph?:number;energyPercent?:number;energySource?:string;availability?:string;gpsAvailable?:boolean;locationName?:string;locationCode?:string;onSelect?:()=>void};
 export type MapLayers={parkingZones:{boundary?:unknown;code:string}[];parkingBays:{latitude?:number;longitude?:number;status:string;code:string}[];chargingStations:{latitude:number;longitude:number;status:string;code:string}[];fuelingStations:{latitude:number;longitude:number;status:string;code:string}[];geofences:{boundary:unknown;code:string;restricted:boolean}[]};
 export interface MapHandle { setVehicles(vehicles:MapVehicle[]):void; setVehiclesVisible(visible:boolean):void; setTrail(points:{latitude:number;longitude:number}[]):void; setOperationalLayers(layers:MapLayers):void; invalidateSize():void; destroy():void; }
@@ -63,11 +63,214 @@ let googlePromise:Promise<void>|undefined;
 function loadGoogle(key:string):Promise<void>{if(googlePromise)return googlePromise;googlePromise=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}`;script.async=true;script.onload=()=>resolve();script.onerror=()=>reject(new Error('Google Maps could not be loaded'));document.head.appendChild(script)});return googlePromise}
 function escapeHtml(value:string){return value.replace(/[&<>'"]/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[character]!))}
 
+
+import type { GeoJSONSource, MapLayerMouseEvent, Popup as MapPopup, StyleSpecification } from 'maplibre-gl';
+import type { Protocol as PmtilesProtocol } from 'pmtiles';
+import { authHeader } from '../api/client';
+import 'maplibre-gl/dist/maplibre-gl.css';
+
+type GeoFeature = { type: 'Feature'; geometry: { type: string; coordinates: unknown }; properties: Record<string, unknown> };
+const vehicleSourceId = 'dpwfms-vehicles';
+const operationsSourceId = 'dpwfms-operations';
+const trailSourceId = 'dpwfms-trail';
+let sharedPmtilesProtocol: PmtilesProtocol | undefined;
+
+class PmtilesProvider implements MapProvider {
+  readonly name = 'PMTiles (MapLibre)';
+  async mount(element: HTMLElement, configuration: MapConfiguration): Promise<MapHandle> {
+    element.replaceChildren();
+    const styleUrl = configuration.style_url || import.meta.env.VITE_PMTILES_STYLE_URL || import.meta.env.VITE_OFFLINE_STYLE_URL || '/maps/style.json';
+    const [{ addProtocol, Map: MapLibreMap, LngLatBounds, NavigationControl, FullscreenControl, ScaleControl, Popup }, pmtiles] = await Promise.all([import('maplibre-gl'), import('pmtiles')]);
+    if (!sharedPmtilesProtocol) {
+      sharedPmtilesProtocol = new pmtiles.Protocol();
+      try { addProtocol('pmtiles', sharedPmtilesProtocol.tile); } catch { /* already registered */ }
+    }
+    const protocol = sharedPmtilesProtocol;
+    const resolvedStyleUrl = new URL(styleUrl, window.location.href);
+    const styleBase = new URL('.', resolvedStyleUrl).href;
+    const javaMapHeaders = (url: string) => {
+      const requestUrl = new URL(url, window.location.href);
+      return requestUrl.origin === window.location.origin && requestUrl.pathname.startsWith('/api/maps/') ? authHeader() : {};
+    };
+    const resolveArchiveUrl = (url: string) => {
+      const path = url.slice('pmtiles://'.length);
+      return /^https?:\/\//i.test(path) ? path : new URL(path.replace(/^\/+/, ''), styleBase).href;
+    };
+    const styleResponse = await fetch(resolvedStyleUrl, { headers: javaMapHeaders(resolvedStyleUrl.href) });
+    if (!styleResponse.ok) throw new Error('Map style request failed (' + styleResponse.status + ')');
+    const styleDocument = await styleResponse.json() as unknown as StyleSpecification & { sources?: Record<string, { url?: string; tiles?: string[] }> };
+    const archiveUrls = new Set<string>();
+    Object.values(styleDocument.sources ?? {}).forEach(source => {
+      if (source.url?.startsWith('pmtiles://')) {
+        const archiveUrl = resolveArchiveUrl(source.url);
+        archiveUrls.add(archiveUrl);
+        source.url = 'pmtiles://' + archiveUrl;
+      }
+      if (source.tiles) {
+        source.tiles = source.tiles.map(tile => {
+          if (!tile.startsWith('pmtiles://')) return tile;
+          const archiveUrl = resolveArchiveUrl(tile);
+          archiveUrls.add(archiveUrl);
+          return 'pmtiles://' + archiveUrl;
+        });
+      }
+    });
+    if (!archiveUrls.size) throw new Error('The configured MapLibre style does not contain a PMTiles source');
+    archiveUrls.forEach(url => protocol.add(new pmtiles.PMTiles(new pmtiles.FetchSource(url, new Headers(javaMapHeaders(url))))));
+    const map = new MapLibreMap({
+      container: element,
+      style: styleDocument,
+      center: [configuration.default_longitude, configuration.default_latitude],
+      zoom: configuration.default_zoom,
+      transformRequest: (url) => {
+        return { url, headers: javaMapHeaders(url) };
+      }
+    });
+    map.addControl(new NavigationControl(), 'top-right');
+    map.addControl(new FullscreenControl(), 'top-right');
+    map.addControl(new ScaleControl({ unit: 'metric' }), 'bottom-left');
+    await new Promise<void>((resolve, reject) => {
+      map.once('load', () => resolve());
+      map.once('error', event => reject(event.error ?? new Error('PMTiles map style could not be loaded')));
+    });
+
+    const emptyCollection = () => ({ type: 'FeatureCollection' as const, features: [] as never[] });
+    map.addSource(vehicleSourceId, { type: 'geojson', data: emptyCollection(), cluster: true, clusterRadius: 48, clusterMaxZoom: 15 });
+    map.addLayer({ id: 'dpwfms-vehicle-clusters', type: 'circle', source: vehicleSourceId, filter: ['has', 'point_count'], paint: { 'circle-color': '#183c64', 'circle-radius': ['step', ['get', 'point_count'], 18, 10, 22, 50, 28], 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 } });
+    map.addLayer({ id: 'dpwfms-vehicle-cluster-count', type: 'symbol', source: vehicleSourceId, filter: ['has', 'point_count'], layout: { 'text-field': ['get', 'point_count_abbreviated'], 'text-size': 12 }, paint: { 'text-color': '#ffffff' } });
+
+    const arrow = document.createElement('canvas');
+    arrow.width = 32; arrow.height = 32;
+    const context = arrow.getContext('2d');
+    if (context) {
+      context.fillStyle = '#ffffff';
+      context.beginPath(); context.moveTo(16, 2); context.lineTo(28, 29); context.lineTo(16, 23); context.lineTo(4, 29); context.closePath(); context.fill();
+      map.addImage('dpwfms-vehicle-arrow', context.getImageData(0, 0, 32, 32), { sdf: true });
+    }
+    map.addLayer({ id: 'dpwfms-vehicle-halo', type: 'circle', source: vehicleSourceId, filter: ['!', ['has', 'point_count']], paint: { 'circle-radius': 10, 'circle-color': ['get', 'markerColor'], 'circle-opacity': 0.22 } });
+    map.addLayer({ id: 'dpwfms-vehicle-symbols', type: 'symbol', source: vehicleSourceId, filter: ['!', ['has', 'point_count']], layout: { 'icon-image': 'dpwfms-vehicle-arrow', 'icon-size': 0.7, 'icon-rotate': ['get', 'heading'], 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true, 'text-field': ['get', 'name'], 'text-size': 11, 'text-offset': [0, 1.4], 'text-anchor': 'top', 'text-allow-overlap': false }, paint: { 'icon-color': ['get', 'markerColor'], 'text-color': '#172b3a', 'text-halo-color': '#ffffff', 'text-halo-width': 1.2 } });
+
+    map.addSource(operationsSourceId, { type: 'geojson', data: emptyCollection() });
+    map.addLayer({ id: 'dpwfms-operation-fills', type: 'fill', source: operationsSourceId, filter: ['in', ['get', 'shape'], ['literal', ['zone', 'geofence']]], paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.1 } });
+    map.addLayer({ id: 'dpwfms-operation-lines', type: 'line', source: operationsSourceId, filter: ['in', ['get', 'shape'], ['literal', ['zone', 'geofence']]], paint: { 'line-color': ['get', 'color'], 'line-width': 2, 'line-dasharray': [2, 2] } });
+    map.addLayer({ id: 'dpwfms-operation-points', type: 'circle', source: operationsSourceId, filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 7, 'circle-color': ['get', 'color'], 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 1.5 } });
+    map.addLayer({ id: 'dpwfms-operation-labels', type: 'symbol', source: operationsSourceId, filter: ['==', ['geometry-type'], 'Point'], layout: { 'text-field': ['get', 'label'], 'text-size': 10, 'text-offset': [0, 1.2], 'text-anchor': 'top' }, paint: { 'text-color': '#183247', 'text-halo-color': '#ffffff', 'text-halo-width': 1.2 } });
+    map.addSource(trailSourceId, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addLayer({ id: 'dpwfms-trail-line', type: 'line', source: trailSourceId, paint: { 'line-color': '#d71968', 'line-width': 4, 'line-opacity': 0.9 } });
+
+    const colors: Record<string, string> = { OFFLINE: '#7a8792', OUT_OF_SERVICE: '#7a8792', STALE: '#d68100', FAULT: '#d9253f', CRITICAL: '#d9253f', IDLE: '#e59a19', PARKED: '#e59a19', QUEUED: '#e59a19', ASSIGNED: '#1684d8', WORKING: '#1684d8', CHARGING: '#1684d8', EN_ROUTE: '#1684d8' };
+    const markerColor = (vehicle: MapVehicle) => vehicle.stale ? '#d68100' : (colors[vehicle.status] || '#2aa866');
+    let currentVehicles: MapVehicle[] = [];
+    let visible = true;
+    let initialFit = true;
+    let popup: MapPopup | undefined;
+    const byName = new Map<string, MapVehicle>();
+    const setSourceData = (id: string, data: unknown) => {
+      const source = map.getSource(id) as GeoJSONSource | undefined;
+      source?.setData(data as never);
+    };
+    const renderVehicles = (vehicles: MapVehicle[]) => {
+      currentVehicles = vehicles;
+      byName.clear();
+      const data = { type: 'FeatureCollection', features: vehicles.map((vehicle, index) => {
+        byName.set(vehicle.name, vehicle);
+        return { type: 'Feature', id: index, geometry: { type: 'Point', coordinates: [vehicle.longitude, vehicle.latitude] }, properties: { name: vehicle.name, status: vehicle.status, stale: vehicle.stale, heading: vehicle.heading || 0, speed: vehicle.speedKph ?? 0, gps: vehicle.gpsAvailable !== false, location: vehicle.locationName || vehicle.locationCode || 'Location unavailable', markerColor: markerColor(vehicle) } };
+      }) };
+      setSourceData(vehicleSourceId, data);
+    };
+    const clickVehicle = (event: MapLayerMouseEvent) => {
+      const feature = event.features?.[0];
+      if (!feature) return;
+      const name = String(feature.properties?.name ?? '');
+      const vehicle = byName.get(name);
+      if (!vehicle) return;
+      const properties = feature.properties ?? {};
+      const content = document.createElement('div');
+      content.className = 'dpwfms-map-popup';
+      const title = document.createElement('strong'); title.textContent = name; content.append(title);
+      const details = document.createElement('div');
+      details.textContent = String(properties.status) + ' · ' + String(properties.speed) + ' km/h';
+      content.append(details);
+      const position = document.createElement('div');
+      position.textContent = properties.gps === false || properties.gps === 'false' ? 'GPS unavailable · retained position' : String(properties.location);
+      content.append(position);
+      const link = document.createElement('a'); link.href = '#/telemetry'; link.textContent = 'Fleet telemetry details'; content.append(link);
+      popup?.remove();
+      popup = new Popup({ closeButton: true, offset: 16 }).setLngLat(event.lngLat).setDOMContent(content).addTo(map);
+      vehicle.onSelect?.();
+    };
+    map.on('click', 'dpwfms-vehicle-symbols', clickVehicle);
+    map.on('click', 'dpwfms-vehicle-clusters', event => {
+      const feature = event.features?.[0];
+      const clusterId = feature?.properties?.cluster_id;
+      if (clusterId == null) return;
+      const source = map.getSource(vehicleSourceId) as GeoJSONSource;
+      void source.getClusterExpansionZoom(Number(clusterId)).then(zoom => {
+        if (zoom != null && feature?.geometry.type === 'Point') map.easeTo({ center: feature.geometry.coordinates as [number, number], zoom });
+      }).catch(() => {});
+    });
+    map.on('mouseenter', 'dpwfms-vehicle-symbols', () => { map.getCanvas().style.cursor = 'pointer'; });
+    map.on('mouseleave', 'dpwfms-vehicle-symbols', () => { map.getCanvas().style.cursor = ''; });
+
+    const normalizeGeometry = (value: unknown): unknown => {
+      if (typeof value === 'string') { try { return normalizeGeometry(JSON.parse(value)); } catch { return undefined; } }
+      if (!value || typeof value !== 'object') return undefined;
+      const candidate = value as { type?: string; geometry?: unknown; features?: unknown[] };
+      if (candidate.type === 'FeatureCollection' && Array.isArray(candidate.features)) return candidate.features;
+      if (candidate.type === 'Feature') return [candidate];
+      if (candidate.type && 'coordinates' in candidate) return [{ type: 'Feature', geometry: candidate, properties: {} }];
+      if (candidate.geometry) return normalizeGeometry(candidate.geometry);
+      return undefined;
+    };
+    const makeOperationFeature = (geometry: unknown, label: string, color: string, shape: string, restricted = false): GeoFeature[] => {
+      const features = normalizeGeometry(geometry);
+      if (!Array.isArray(features)) return [];
+      return features.flatMap(item => {
+        const feature = item as { geometry?: { type: string; coordinates: unknown }; properties?: Record<string, unknown> };
+        if (!feature.geometry?.type) return [];
+        return [{ type: 'Feature', geometry: feature.geometry, properties: { ...(feature.properties ?? {}), label, color, shape, restricted } }];
+      });
+    };
+    const handle: MapHandle = {
+      setVehicles(vehicles) {
+        renderVehicles(vehicles);
+        if (initialFit && visible && vehicles.length) {
+          if (vehicles.length === 1) map.easeTo({ center: [vehicles[0].longitude, vehicles[0].latitude], zoom: Math.max(configuration.default_zoom, 14) });
+          else { const bounds = new LngLatBounds(); vehicles.forEach(vehicle => bounds.extend([vehicle.longitude, vehicle.latitude])); map.fitBounds(bounds, { padding: 56, maxZoom: configuration.default_zoom }); }
+          initialFit = false;
+        }
+      },
+      setVehiclesVisible(nextVisible) {
+        visible = nextVisible;
+        ['dpwfms-vehicle-clusters', 'dpwfms-vehicle-cluster-count', 'dpwfms-vehicle-halo', 'dpwfms-vehicle-symbols'].forEach(id => map.setLayoutProperty(id, 'visibility', nextVisible ? 'visible' : 'none'));
+      },
+      setTrail(points) {
+        const data = points.length > 1 ? { type: 'Feature', geometry: { type: 'LineString', coordinates: points.map(point => [point.longitude, point.latitude]) }, properties: {} } : { type: 'FeatureCollection', features: [] };
+        setSourceData(trailSourceId, data);
+      },
+      setOperationalLayers(layers) {
+        const features: GeoFeature[] = [];
+        layers.parkingBays.filter(item => item.latitude != null && item.longitude != null).forEach(item => features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [item.longitude!, item.latitude!] }, properties: { label: 'Parking ' + item.code + ' · ' + item.status, color: '#2aa866', shape: 'point' } }));
+        layers.chargingStations.forEach(item => features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [item.longitude, item.latitude] }, properties: { label: 'Charging ' + item.code + ' · ' + item.status, color: '#1684d8', shape: 'point' } }));
+        layers.fuelingStations.forEach(item => features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [item.longitude, item.latitude] }, properties: { label: 'Fuel ' + item.code + ' · ' + item.status, color: '#9b5cff', shape: 'point' } }));
+        layers.parkingZones.forEach(item => features.push(...makeOperationFeature(item.boundary, item.code, '#d71968', 'zone')));
+        layers.geofences.forEach(item => features.push(...makeOperationFeature(item.boundary, item.code, item.restricted ? '#d9253f' : '#d71968', 'geofence', item.restricted)));
+        setSourceData(operationsSourceId, { type: 'FeatureCollection', features });
+      },
+      invalidateSize() { map.resize(); },
+      destroy() { popup?.remove(); map.remove(); element.replaceChildren(); }
+    };
+    requestAnimationFrame(() => handle.invalidateSize());
+    return handle;
+  }
+}
+
 const offline=new LeafletRasterProvider('Offline tiles',configuration=>configuration.tile_url||import.meta.env.VITE_OFFLINE_TILE_URL||'/tiles/{z}/{x}/{y}.png');
 const osm=new LeafletRasterProvider('OpenStreetMap',configuration=>configuration.tile_url||import.meta.env.VITE_OSM_TILE_URL||'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
 const mapbox=new LeafletRasterProvider('Mapbox-compatible',configuration=>configuration.tile_url||'/tiles/{z}/{x}/{y}.png');
 
 export function resolveProvider(configuration:MapConfiguration):MapProvider {
+  if(configuration.provider==='pmtiles')return new PmtilesProvider();
   if(configuration.provider==='google'&&import.meta.env.VITE_GOOGLE_MAPS_API_KEY)return new GoogleProvider();
   if(configuration.provider==='osm')return osm;
   if(configuration.provider==='mapbox'&&import.meta.env.VITE_MAPBOX_ACCESS_TOKEN)return mapbox;
