@@ -64,15 +64,8 @@ function loadGoogle(key:string):Promise<void>{if(googlePromise)return googleProm
 function escapeHtml(value:string){return value.replace(/[&<>'"]/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[character]!))}
 
 
-import { addProtocol, GeoJSONSource, LngLatBounds, Map as MapLibreMap, MapLayerMouseEvent, Popup } from 'maplibre-gl';
-import { Protocol as PmtilesProtocol } from 'pmtiles';
+import type { GeoJSONSource, MapLayerMouseEvent } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-
-let pmtilesProtocol: PmtilesProtocol | undefined;
-function installPmtilesProtocol() {
-  if (!pmtilesProtocol) pmtilesProtocol = new PmtilesProtocol();
-  try { addProtocol('pmtiles', pmtilesProtocol.tile); } catch { /* already registered by another map instance */ }
-}
 
 type GeoFeature = { type: 'Feature'; geometry: { type: string; coordinates: unknown }; properties: Record<string, unknown> };
 const vehicleSourceId = 'dpwfms-vehicles';
@@ -84,7 +77,9 @@ class PmtilesProvider implements MapProvider {
   async mount(element: HTMLElement, configuration: MapConfiguration): Promise<MapHandle> {
     element.replaceChildren();
     const styleUrl = configuration.style_url || import.meta.env.VITE_PMTILES_STYLE_URL || import.meta.env.VITE_OFFLINE_STYLE_URL || '/maps/style.json';
-    installPmtilesProtocol();
+    const [{ addProtocol, Map: MapLibreMap, LngLatBounds, NavigationControl, FullscreenControl, ScaleControl, Popup }, pmtiles] = await Promise.all([import('maplibre-gl'), import('pmtiles')]);
+    const protocol = new pmtiles.Protocol();
+    try { addProtocol('pmtiles', protocol.tile); } catch { /* already registered by another map instance */ }
     const styleBase = new URL('.', new URL(styleUrl, window.location.href)).href;
     const map = new MapLibreMap({
       container: element,
@@ -98,6 +93,9 @@ class PmtilesProvider implements MapProvider {
         return { url: 'pmtiles://' + archiveUrl };
       }
     });
+    map.addControl(new NavigationControl(), 'top-right');
+    map.addControl(new FullscreenControl(), 'top-right');
+    map.addControl(new ScaleControl({ unit: 'metric' }), 'bottom-left');
     await new Promise<void>((resolve, reject) => {
       map.once('load', () => resolve());
       map.once('error', event => reject(event.error ?? new Error('PMTiles map style could not be loaded')));
