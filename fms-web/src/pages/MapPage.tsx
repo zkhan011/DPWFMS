@@ -88,6 +88,14 @@ export default function MapPage(){
       <dt>Low energy · 20% or less</dt><dd>{vehicles.filter(v=>(v.energy_percent??100)<=20).length}</dd>
      </dl>
     </section>
+    <details className="map-vehicle-list">
+     <summary>Vehicle list <span>{positions.length}</span></summary>
+     <div className="map-vehicle-list-items">
+      {filtered.slice(0,30).map(v=><button key={v.id} type="button" aria-pressed={selected?.id===v.id} onClick={()=>void select(v)}><strong>{v.fleet_number}</strong><span>{(v.freshness??v.operational_status).replaceAll('_',' ')}</span><small>{v.location_name??v.location_code??'Location not mapped'} · {v.speed_kph??0} km/h</small></button>)}
+      {filtered.length>30&&<p>Showing 30 of {filtered.length}. Search by fleet number to narrow the list.</p>}
+      {filtered.length===0&&<p>No vehicles match the current filters.</p>}
+     </div>
+    </details>
     <p className="map-help map-refresh-help">Positions refresh automatically every 5 seconds.</p>
    </aside>
    <section className="map-canvas-panel" aria-label="Fleet map">
