@@ -217,7 +217,7 @@ public class WorkspaceController {
   public Map<String, Object> updateMapConfiguration(@PathVariable("id") UUID id,
                                                      @Valid @RequestBody MapConfigurationRequest request,
                                                      Principal actor) {
-    if (!List.of("google", "osm", "offline", "mapbox").contains(request.provider())) {
+    if (!List.of("google", "osm", "offline", "mapbox", "pmtiles").contains(request.provider())) {
       throw new IllegalArgumentException("unsupported map provider");
     }
     int changed = jdbc.update("""
@@ -241,6 +241,7 @@ public class WorkspaceController {
       case "google", "mapbox" -> configuration.get("secret_reference") != null;
       case "osm" -> true;
       case "offline" -> configuration.get("tile_url") != null || configuration.get("style_url") != null;
+      case "pmtiles" -> configuration.get("style_url") != null && !String.valueOf(configuration.get("style_url")).isBlank();
       default -> false;
     };
     String status = configured ? "CONFIGURED" : "MISSING_CONFIGURATION";
