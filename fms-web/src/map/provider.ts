@@ -86,12 +86,17 @@ class PmtilesProvider implements MapProvider {
       try { addProtocol('pmtiles', sharedPmtilesProtocol.tile); } catch { /* already registered */ }
     }
     const protocol = sharedPmtilesProtocol;
-    const styleBase = new URL('.', new URL(styleUrl, window.location.href)).href;
+    const resolvedStyleUrl = new URL(styleUrl, window.location.href);
+    const styleBase = new URL('.', resolvedStyleUrl).href;
+    const javaMapHeaders = (url: string) => {
+      const requestUrl = new URL(url, window.location.href);
+      return requestUrl.origin === window.location.origin && requestUrl.pathname.startsWith('/api/maps/') ? authHeader() : {};
+    };
     const resolveArchiveUrl = (url: string) => {
       const path = url.slice('pmtiles://'.length);
       return /^https?:\/\//i.test(path) ? path : new URL(path.replace(/^\/+/, ''), styleBase).href;
     };
-    const styleResponse = await fetch(new URL(styleUrl, window.location.href), { headers: authHeader() });
+    const styleResponse = await fetch(resolvedStyleUrl, { headers: javaMapHeaders(resolvedStyleUrl.href) });
     if (!styleResponse.ok) throw new Error('Map style request failed (' + styleResponse.status + ')');
     const styleDocument = await styleResponse.json() as { sources?: Record<string, { url?: string; tiles?: string[] }> };
     const archiveUrls = [...new Set(Object.values(styleDocument.sources ?? {}).flatMap(source => [
@@ -99,17 +104,15 @@ class PmtilesProvider implements MapProvider {
       ...(source.tiles ?? []).filter(tile => tile.startsWith('pmtiles://')).map(resolveArchiveUrl)
     ]))];
     if (!archiveUrls.length) throw new Error('The configured MapLibre style does not contain a PMTiles source');
-    archiveUrls.forEach(url => protocol.add(new pmtiles.PMTiles(new pmtiles.FetchSource(url, new Headers(authHeader())))));
+    archiveUrls.forEach(url => protocol.add(new pmtiles.PMTiles(new pmtiles.FetchSource(url, new Headers(javaMapHeaders(url))))));
     const map = new MapLibreMap({
       container: element,
       style: styleUrl,
       center: [configuration.default_longitude, configuration.default_latitude],
       zoom: configuration.default_zoom,
       transformRequest: (url) => {
-        if (!url.startsWith('pmtiles://')) return { url };
-        const archivePath = url.slice('pmtiles://'.length);
-        const archiveUrl = /^https?:\/\//i.test(archivePath) ? archivePath : new URL(archivePath.replace(/^\/+/, ''), styleBase).href;
-        return { url: 'pmtiles://' + archiveUrl };
+        if (!url.startsWith('pmtiles://')) return { url, headers: javaMapHeaders(url) };
+        return { url: 'pmtiles://' + resolveArchiveUrl(url) };
       }
     });
     map.addControl(new NavigationControl(), 'top-right');
