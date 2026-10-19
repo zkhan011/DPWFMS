@@ -25,6 +25,7 @@ public class AutomationRuntime {
   private final AutomationReservationService reservations = new AutomationReservationService();
   private final AutomationAlertService alerts = new AutomationAlertService();
   private final Map<UUID, AssetAutomationSnapshot> assets = new ConcurrentHashMap<>();
+  private final Set<UUID> simulatorAssetIds = ConcurrentHashMap.newKeySet();
   private final Map<UUID, AutomaticJob> jobs = new ConcurrentHashMap<>();
   private final List<AutomationAuditEvent> auditEvents = new java.util.concurrent.CopyOnWriteArrayList<>();
   private final List<ParkingSpace> parkingSpaces;
@@ -50,6 +51,7 @@ public class AutomationRuntime {
       for (int i = 1; i <= 10; i++) {
         UUID id = UUID.nameUUIDFromBytes(("automation-asset-" + i).getBytes());
         assets.put(id, snapshot(id, i == 2 ? 16 : i == 3 ? 8 : 60, now));
+        simulatorAssetIds.add(id);
       }
     }
     parkingSpaces = simulatorEnabled ? java.util.stream.IntStream.rangeClosed(1, 30).mapToObj(i ->
@@ -69,7 +71,9 @@ public class AutomationRuntime {
     snapshot = withEvaluationTime(snapshot, Instant.now());
     assets.put(assetId, snapshot);
     AutomationDecision decision = engine.evaluate(snapshot, simulatorEnabled ? parkingSpaces : loadParkingSpaces(), simulatorEnabled ? fuelingBays : loadFuelingBays(), simulate, trigger);
-    decisionStore.append(decision);
+    // Simulator snapshots are intentionally in-memory and have no matching assets row.
+    // Keep their decisions in the runtime history without inserting them into the FK-backed audit table.
+    if (!simulatorAssetIds.contains(assetId)) decisionStore.append(decision);
     return decision;
   }
 
