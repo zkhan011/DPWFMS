@@ -21,7 +21,8 @@ services:
     networks: [backend]
   api:
     build: .
-    environment: {SPRING_PROFILES_ACTIVE: prod, DB_URL: "jdbc:postgresql://postgres:5432/${DB_NAME:-dpw_fms}", DB_USER: "${DB_USER}", DB_PASSWORD: "${DB_PASSWORD}", REDIS_HOST: redis, RABBITMQ_HOST: rabbitmq, RABBITMQ_USER: "${RABBITMQ_USER}", RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD}", DPWFMS_LOCAL_USERNAME: "${DPWFMS_LOCAL_USERNAME}", DPWFMS_LOCAL_PASSWORD: "${DPWFMS_LOCAL_PASSWORD}", CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-http://localhost:3000}"}
+    environment: {SPRING_PROFILES_ACTIVE: prod, DB_URL: "jdbc:postgresql://postgres:5432/${DB_NAME:-dpw_fms}", DB_USER: "${DB_USER}", DB_PASSWORD: "${DB_PASSWORD}", REDIS_HOST: redis, RABBITMQ_HOST: rabbitmq, RABBITMQ_USER: "${RABBITMQ_USER}", RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD}", DPWFMS_LOCAL_USERNAME: "${DPWFMS_LOCAL_USERNAME}", DPWFMS_LOCAL_PASSWORD: "${DPWFMS_LOCAL_PASSWORD}", CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-http://localhost:3000}", MAP_ASSETS_DIRECTORY: /app/maps}
+    volumes: [./map-assets:/app/maps:ro]
     depends_on: {postgres: {condition: service_healthy}}
     ports: ["127.0.0.1:8080:8080"]
     networks: [backend, frontend]
