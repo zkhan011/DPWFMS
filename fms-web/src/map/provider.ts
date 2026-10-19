@@ -107,12 +107,11 @@ class PmtilesProvider implements MapProvider {
     archiveUrls.forEach(url => protocol.add(new pmtiles.PMTiles(new pmtiles.FetchSource(url, new Headers(javaMapHeaders(url))))));
     const map = new MapLibreMap({
       container: element,
-      style: styleUrl,
+      style: styleDocument,
       center: [configuration.default_longitude, configuration.default_latitude],
       zoom: configuration.default_zoom,
       transformRequest: (url) => {
-        if (!url.startsWith('pmtiles://')) return { url, headers: javaMapHeaders(url) };
-        return { url: 'pmtiles://' + resolveArchiveUrl(url) };
+        return { url, headers: javaMapHeaders(url) };
       }
     });
     map.addControl(new NavigationControl(), 'top-right');
