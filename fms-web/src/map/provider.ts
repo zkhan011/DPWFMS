@@ -79,7 +79,7 @@ class PmtilesProvider implements MapProvider {
   readonly name = 'PMTiles (MapLibre)';
   async mount(element: HTMLElement, configuration: MapConfiguration): Promise<MapHandle> {
     element.replaceChildren();
-    const styleUrl = configuration.style_url || import.meta.env.VITE_PMTILES_STYLE_URL || import.meta.env.VITE_OFFLINE_STYLE_URL || '/maps/style.json';
+    const styleUrl = configuration.style_url || import.meta.env.VITE_PMTILES_STYLE_URL || import.meta.env.VITE_OFFLINE_STYLE_URL || '/api/maps/style.json';
     const [{ addProtocol, Map: MapLibreMap, LngLatBounds, NavigationControl, FullscreenControl, ScaleControl, Popup }, pmtiles] = await Promise.all([import('maplibre-gl'), import('pmtiles')]);
     if (!sharedPmtilesProtocol) {
       sharedPmtilesProtocol = new pmtiles.Protocol();
