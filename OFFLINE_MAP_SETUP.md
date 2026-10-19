@@ -1,9 +1,16 @@
 # Offline map setup
 
-DPW FMS supports raster XYZ tiles and direct vector tiles from a PMTiles archive. For raster XYZ, run TileServer GL, Martin, or another internal tile service and mount the output at `/tiles/{z}/{x}/{y}.png`. For PMTiles, serve a MapLibre style JSON, the `.pmtiles` archive, glyphs, and referenced assets from your tested .NET deployment. Keep the archive outside Git.
+DPW FMS serves direct PMTiles basemaps from the Java API. No .NET map host or external style URL is involved. The Java service exposes `/api/maps/**` from a local directory (Docker Compose mounts `./map-assets` at `/app/maps`) and supports byte-range reads of the archive.
 
-For direct PMTiles, select **Direct PMTiles (MapLibre)** in **Administration → Map provider** and set **Vector style URL** to the URL of the style JSON. The style should use a PMTiles source such as `pmtiles://dubai_area.pmtiles`. The browser reads tile ranges directly from the archive through the PMTiles protocol; DPW FMS receives the live fleet data separately from its API.
+To install the supplied Jebel Ali map from the project root:
 
-The .NET host must serve byte-range requests for the archive. When map assets use a different origin, configure CORS for the style, archive, glyphs, and style assets. Check attribution, coverage, and zoom levels in the browser. See [map configuration](MAP_CONFIGURATION.md) for deployment details.
+```bash
+scripts/install-pmtiles-map-assets.sh /path/to/Map.zip
+docker compose up --build
+```
 
-For the Jebel Ali map, use the operational boundary around `24.9857,55.0273` and default zoom `12`. Keep raster XYZ settings available if that deployment needs a raster fallback.
+The installer extracts the style, `dubai_area.pmtiles`, and Roboto glyphs into `map-assets`. It adjusts the style's glyph URL to the Java-served `/api/maps/fonts/` path. The initial database migration sets the map provider to `pmtiles` and style URL to `/api/maps/style.json`.
+
+For direct PMTiles, the style source should use `pmtiles://dubai_area.pmtiles`. The browser reads tile ranges directly from the Java API; DPW FMS continues to load live fleet and operational data through its authenticated API endpoints. Keep the archive out of Git; the compose mount is read-only.
+
+Raster XYZ remains available as an alternative provider. For the Jebel Ali map, the default center is `24.9857,55.0273`, zoom `12`. Retain data attribution from the style and verify local coverage at the zoom levels operators need.
