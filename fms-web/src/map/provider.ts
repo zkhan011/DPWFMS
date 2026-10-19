@@ -173,7 +173,7 @@ class PmtilesProvider implements MapProvider {
       const feature = event.features?.[0];
       const clusterId = feature?.properties?.cluster_id;
       if (clusterId == null) return;
-      const source = map.getSource(vehicleSourceId) as maplibregl.GeoJSONSource;
+      const source = map.getSource(vehicleSourceId) as GeoJSONSource;
       source.getClusterExpansionZoom(Number(clusterId), (error, zoom) => {
         if (!error && zoom != null && feature?.geometry.type === 'Point') map.easeTo({ center: feature.geometry.coordinates as [number, number], zoom });
       });
@@ -205,7 +205,7 @@ class PmtilesProvider implements MapProvider {
         renderVehicles(vehicles);
         if (initialFit && visible && vehicles.length) {
           if (vehicles.length === 1) map.easeTo({ center: [vehicles[0].longitude, vehicles[0].latitude], zoom: Math.max(configuration.default_zoom, 14) });
-          else map.fitBounds(new LngLatBounds(vehicles.map(vehicle => [vehicle.longitude, vehicle.latitude] as [number, number])), { padding: 56, maxZoom: configuration.default_zoom });
+          else { const bounds = new LngLatBounds(); vehicles.forEach(vehicle => bounds.extend([vehicle.longitude, vehicle.latitude])); map.fitBounds(bounds, { padding: 56, maxZoom: configuration.default_zoom }); }
           initialFit = false;
         }
       },
