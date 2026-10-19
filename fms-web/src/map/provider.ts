@@ -99,11 +99,23 @@ class PmtilesProvider implements MapProvider {
     const styleResponse = await fetch(resolvedStyleUrl, { headers: javaMapHeaders(resolvedStyleUrl.href) });
     if (!styleResponse.ok) throw new Error('Map style request failed (' + styleResponse.status + ')');
     const styleDocument = await styleResponse.json() as { sources?: Record<string, { url?: string; tiles?: string[] }> };
-    const archiveUrls = [...new Set(Object.values(styleDocument.sources ?? {}).flatMap(source => [
-      ...(source.url?.startsWith('pmtiles://') ? [resolveArchiveUrl(source.url)] : []),
-      ...(source.tiles ?? []).filter(tile => tile.startsWith('pmtiles://')).map(resolveArchiveUrl)
-    ]))];
-    if (!archiveUrls.length) throw new Error('The configured MapLibre style does not contain a PMTiles source');
+    const archiveUrls = new Set<string>();
+    Object.values(styleDocument.sources ?? {}).forEach(source => {
+      if (source.url?.startsWith('pmtiles://')) {
+        const archiveUrl = resolveArchiveUrl(source.url);
+        archiveUrls.add(archiveUrl);
+        source.url = 'pmtiles://' + archiveUrl;
+      }
+      if (source.tiles) {
+        source.tiles = source.tiles.map(tile => {
+          if (!tile.startsWith('pmtiles://')) return tile;
+          const archiveUrl = resolveArchiveUrl(tile);
+          archiveUrls.add(archiveUrl);
+          return 'pmtiles://' + archiveUrl;
+        });
+      }
+    });
+    if (!archiveUrls.size) throw new Error('The configured MapLibre style does not contain a PMTiles source');
     archiveUrls.forEach(url => protocol.add(new pmtiles.PMTiles(new pmtiles.FetchSource(url, new Headers(javaMapHeaders(url))))));
     const map = new MapLibreMap({
       container: element,
