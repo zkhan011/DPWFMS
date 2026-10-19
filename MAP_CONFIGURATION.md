@@ -11,7 +11,7 @@ DPW FMS renders direct vector tiles from a PMTiles archive with MapLibre GL JS a
 
 The seeded Jebel Ali map uses **Direct PMTiles (MapLibre)** and `/api/maps/style.json`. The API serves assets from `MAP_ASSETS_DIRECTORY` (default `./maps`; Docker Compose mounts `./map-assets` to `/app/maps`). Place `style.json`, `dubai_area.pmtiles`, and the `fonts` directory there. Use the included `scripts/install-pmtiles-map-assets.sh` to extract those files from the supplied `Map.zip`.
 
-The style should reference the archive with a PMTiles URL such as `pmtiles://dubai_area.pmtiles`. The installer adjusts the glyph URL to `/api/maps/fonts/{fontstack}/{range}.pbf`. Java/Spring serves the archive using byte-range responses, which lets the browser read only the tile ranges it needs. Map assets are public static basemap files; DPW FMS API endpoints and live vehicle data remain protected by normal authentication.
+The style should reference the archive with a PMTiles URL such as `pmtiles://dubai_area.pmtiles`. The installer adjusts the glyph URL to `/api/maps/fonts/{fontstack}/{range}.pbf`. Java/Spring serves the archive using byte-range responses, which lets the browser read only the tile ranges it needs. Map assets are served by the Java API behind the same Basic authentication used by DPW FMS. The map adapter attaches the current session credentials only to same-origin `/api/maps/**` requests; it does not send them to external hosts.
 
 The provider retains DPW FMS fleet filters, status colors, heading-aware vehicle markers, clustering, selection popups, telemetry drawer, current route/trail, and parking, charging, fueling, and geofence layers. The configured PMTiles style controls the basemap appearance and attribution.
 
@@ -25,7 +25,7 @@ The provider retains DPW FMS fleet filters, status colors, heading-aware vehicle
 | `VITE_OFFLINE_TILE_URL` | `/tiles/{z}/{x}/{y}.png` |
 | defaults | Jebel Ali `24.9857,55.0273`, zoom `12` |
 
-Provider settings are stored in `map_configurations`; the database style URL takes precedence over build-time defaults. `map.read` is required to view the DPW FMS map and `map.configure` is required to edit it. The basemap files themselves are served as public static resources.
+Provider settings are stored in `map_configurations`; the database style URL takes precedence over build-time defaults. `map.read` is required to view the DPW FMS map and `map.configure` is required to edit it. Map style, archive, fonts, and assets remain behind API authentication.
 
 ## Direct PMTiles
 
