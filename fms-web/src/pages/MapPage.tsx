@@ -14,7 +14,7 @@ const show=(value:unknown,unit='')=>value==null?'Not available':`${String(value)
 const time=(value?:string)=>value?new Date(value).toLocaleString():'Not available';
 const mapErrorMessage=(error:unknown)=>{
  const message=error instanceof Error?error.message:'Map unavailable';
- return /404/.test(message)
+ return /404|not found/i.test(message)
   ? 'Map files returned 404. Set MAP_ASSETS_DIRECTORY to the folder containing style.json, dubai_area.pmtiles, and fonts (by default: .\\map-assets).'
   : message;
 };
