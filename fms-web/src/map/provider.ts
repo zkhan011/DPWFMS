@@ -65,12 +65,15 @@ function escapeHtml(value:string){return value.replace(/[&<>'"]/g,character=>({'
 
 
 import type { GeoJSONSource, MapLayerMouseEvent, Popup as MapPopup } from 'maplibre-gl';
+import type { Protocol as PmtilesProtocol } from 'pmtiles';
+import { authHeader } from '../api/client';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 type GeoFeature = { type: 'Feature'; geometry: { type: string; coordinates: unknown }; properties: Record<string, unknown> };
 const vehicleSourceId = 'dpwfms-vehicles';
 const operationsSourceId = 'dpwfms-operations';
 const trailSourceId = 'dpwfms-trail';
+let sharedPmtilesProtocol: PmtilesProtocol | undefined;
 
 class PmtilesProvider implements MapProvider {
   readonly name = 'PMTiles (MapLibre)';
@@ -78,9 +81,25 @@ class PmtilesProvider implements MapProvider {
     element.replaceChildren();
     const styleUrl = configuration.style_url || import.meta.env.VITE_PMTILES_STYLE_URL || import.meta.env.VITE_OFFLINE_STYLE_URL || '/maps/style.json';
     const [{ addProtocol, Map: MapLibreMap, LngLatBounds, NavigationControl, FullscreenControl, ScaleControl, Popup }, pmtiles] = await Promise.all([import('maplibre-gl'), import('pmtiles')]);
-    const protocol = new pmtiles.Protocol();
-    try { addProtocol('pmtiles', protocol.tile); } catch { /* already registered by another map instance */ }
+    if (!sharedPmtilesProtocol) {
+      sharedPmtilesProtocol = new pmtiles.Protocol();
+      try { addProtocol('pmtiles', sharedPmtilesProtocol.tile); } catch { /* already registered */ }
+    }
+    const protocol = sharedPmtilesProtocol;
     const styleBase = new URL('.', new URL(styleUrl, window.location.href)).href;
+    const resolveArchiveUrl = (url: string) => {
+      const path = url.slice('pmtiles://'.length);
+      return /^https?:\/\//i.test(path) ? path : new URL(path.replace(/^\/+/, ''), styleBase).href;
+    };
+    const styleResponse = await fetch(new URL(styleUrl, window.location.href), { headers: authHeader() });
+    if (!styleResponse.ok) throw new Error('Map style request failed (' + styleResponse.status + ')');
+    const styleDocument = await styleResponse.json() as { sources?: Record<string, { url?: string; tiles?: string[] }> };
+    const archiveUrls = [...new Set(Object.values(styleDocument.sources ?? {}).flatMap(source => [
+      ...(source.url?.startsWith('pmtiles://') ? [resolveArchiveUrl(source.url)] : []),
+      ...(source.tiles ?? []).filter(tile => tile.startsWith('pmtiles://')).map(resolveArchiveUrl)
+    ]))];
+    if (!archiveUrls.length) throw new Error('The configured MapLibre style does not contain a PMTiles source');
+    archiveUrls.forEach(url => protocol.add(new pmtiles.PMTiles(new pmtiles.FetchSource(url, new Headers(authHeader())))));
     const map = new MapLibreMap({
       container: element,
       style: styleUrl,
