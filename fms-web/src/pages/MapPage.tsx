@@ -12,6 +12,12 @@ type Vehicle={id:string;fleet_number:string;asset_type:string;latitude?:number;l
 
 const show=(value:unknown,unit='')=>value==null?'Not available':`${String(value)}${unit?` ${unit}`:''}`;
 const time=(value?:string)=>value?new Date(value).toLocaleString():'Not available';
+const mapErrorMessage=(error:unknown)=>{
+ const message=error instanceof Error?error.message:'Map unavailable';
+ return /404|not found/i.test(message)
+  ? 'Map files returned 404. Set MAP_ASSETS_DIRECTORY to the folder containing style.json, dubai_area.pmtiles, and fonts (by default: .\\map-assets).'
+  : message;
+};
 
 export default function MapPage(){
  const element=useRef<HTMLDivElement>(null),handle=useRef<MapHandle|undefined>(undefined);
@@ -33,11 +39,83 @@ export default function MapPage(){
    setActionMessage(kind==='evaluate'?'Configured automation evaluated. Open Jobs to review the decision.':`Vehicle sent for ${kind}.`);
   }catch(e){setActionMessage(e instanceof Error?e.message:`Unable to start ${kind}`)}finally{setActionBusy(false)}
  }
+ function resetFilters(){setQuery('');setStatus('ALL');setType('ALL');setAvailability('ALL');setFreshness('ALL')}
+ async function enterFullscreen(){
+  const target=element.current?.parentElement;
+  if(!target)return;
+  try{await target.requestFullscreen()}catch(e){setError(mapErrorMessage(e))}
+ }
  useEffect(()=>{handle.current?.setVehicles(positions)},[positions]);
- useEffect(()=>{let active=true,timer:number;async function refresh(){try{const[rows,trackit]=await Promise.all([api<Vehicle[]>('/api/workspace/vehicles'),api<Vehicle[]>('/api/v1/integrations/trackit/telemetry/map/positions').catch(()=>[])]);const live=new Map(trackit.map(item=>[item.id,item]));if(active){setVehicles(rows.map(row=>({...row,...live.get(row.id),operational_status:row.operational_status,availability_status:row.availability_status})));setError('')}}catch(e){if(active)setError(e instanceof Error?e.message:'Telemetry unavailable')}}async function start(){try{const[config,layers,health]=await Promise.all([api<MapConfiguration>('/api/workspace/map-configuration'),api<MapLayers>('/api/workspace/map-operational-layers'),api<RoutingHealth>('/api/routing/health')]);setRoutingHealth(health);if(!active||!element.current)return;const adapter=resolveProvider(config);setProvider(adapter.name);handle.current=await adapter.mount(element.current,config);handle.current.setOperationalLayers(layers);await refresh();timer=window.setInterval(refresh,5000)}catch(e){if(active)setError(e instanceof Error?e.message:'Map unavailable')}}start();return()=>{active=false;clearInterval(timer);handle.current?.destroy()}},[]);
+ useEffect(()=>{let active=true,timer:number;async function refresh(){try{const[rows,trackit]=await Promise.all([api<Vehicle[]>('/api/workspace/vehicles'),api<Vehicle[]>('/api/v1/integrations/trackit/telemetry/map/positions').catch(()=>[])]);const live=new Map(trackit.map(item=>[item.id,item]));if(active){setVehicles(rows.map(row=>({...row,...live.get(row.id),operational_status:row.operational_status,availability_status:row.availability_status})));setError('')}}catch(e){if(active)setError(mapErrorMessage(e))}}async function start(){try{const[config,layers,health]=await Promise.all([api<MapConfiguration>('/api/workspace/map-configuration'),api<MapLayers>('/api/workspace/map-operational-layers'),api<RoutingHealth>('/api/routing/health')]);setRoutingHealth(health);if(!active||!element.current)return;const adapter=resolveProvider(config);setProvider(adapter.name);handle.current=await adapter.mount(element.current,config);handle.current.setOperationalLayers(layers);await refresh();timer=window.setInterval(refresh,5000)}catch(e){if(active)setError(mapErrorMessage(e))}}start();return()=>{active=false;clearInterval(timer);handle.current?.destroy()}},[]);
  useEffect(()=>handle.current?.setVehiclesVisible(visible),[visible]);
  const options=(key:keyof Vehicle)=>[...new Set(vehicles.map(v=>String(v[key])).filter(Boolean))].sort();
- return <><PageHeader eyebrow="LIVE OPERATIONS" title="Live fleet map" description={`${provider} · ${positions.length} visible assets · routing ${routingHealth.status}${routingHealth.graph?` graph v${routingHealth.graph.version}`:''}`} actions={<button className="primary" onClick={()=>element.current?.requestFullscreen()}>Full screen</button>}/>{error&&<div className="notice error">{error}</div>}<div className="map-layout"><aside className="map-controls"><h2>Asset filters</h2><input aria-label="Fleet number" placeholder="Fleet number" value={query} onChange={e=>setQuery(e.target.value)}/><select aria-label="Asset type" value={type} onChange={e=>setType(e.target.value)}><option>ALL</option>{options('asset_type').map(x=><option key={x}>{x}</option>)}</select><select aria-label="Operational status" value={status} onChange={e=>setStatus(e.target.value)}><option>ALL</option>{options('operational_status').map(x=><option key={x}>{x}</option>)}</select><select aria-label="Availability" value={availability} onChange={e=>setAvailability(e.target.value)}><option>ALL</option>{options('availability_status').map(x=><option key={x}>{x}</option>)}</select><select aria-label="Telemetry freshness" value={freshness} onChange={e=>setFreshness(e.target.value)}><option>ALL</option><option>ONLINE</option><option>STALE</option><option>OFFLINE</option></select><label><input type="checkbox" checked={visible} onChange={e=>setVisible(e.target.checked)}/>Assets</label><dl className="map-stats"><dt>Visible</dt><dd>{positions.length}</dd><dt>Stale / offline</dt><dd>{positions.filter(x=>x.stale).length}</dd><dt>Low energy</dt><dd>{positions.filter(x=>(x.energyPercent??100)<=20).length}</dd></dl></aside><div ref={element} className="operational-map"/>{selected&&<AssetDrawer vehicle={selected} telemetry={telemetry} route={routeInfo} busy={actionBusy} message={actionMessage} dispatch={dispatch} close={()=>{setSelected(undefined);setTelemetry(undefined);handle.current?.setTrail([])}}/>}</div></>
+ return <>
+  <PageHeader eyebrow="LIVE OPERATIONS" title="Live fleet map"
+    description={`${provider} · ${positions.length} visible assets · routing ${routingHealth.status}${routingHealth.graph?` graph v${routingHealth.graph.version}`:''}`}
+    actions={<button type="button" className="primary" onClick={()=>void enterFullscreen()} aria-label="Open fleet map in full screen">Full screen</button>}/>
+  {error&&<div className="notice error map-error" role="alert">{error}</div>}
+  <div className="map-layout map-workspace">
+   <aside className="map-controls" aria-labelledby="map-filter-title">
+    <div className="map-controls-head">
+     <div><p className="map-kicker">LIVE FLEET</p><h2 id="map-filter-title">Find vehicles</h2></div>
+     <button className="map-reset" type="button" onClick={resetFilters}>Reset</button>
+    </div>
+    <p className="map-help">Filter the map by asset, status, or telemetry freshness.</p>
+    <div className="map-filter-grid">
+     <label htmlFor="map-search">Fleet number
+      <input id="map-search" type="search" placeholder="Search fleet number" value={query} onChange={e=>setQuery(e.target.value)}/>
+     </label>
+     <label htmlFor="map-type">Asset type
+      <select id="map-type" value={type} onChange={e=>setType(e.target.value)}><option value="ALL">All types</option>{options('asset_type').map(x=><option key={x} value={x}>{x}</option>)}</select>
+     </label>
+     <label htmlFor="map-status">Operational status
+      <select id="map-status" value={status} onChange={e=>setStatus(e.target.value)}><option value="ALL">All statuses</option>{options('operational_status').map(x=><option key={x} value={x}>{x.replaceAll('_',' ')}</option>)}</select>
+     </label>
+     <label htmlFor="map-availability">Availability
+      <select id="map-availability" value={availability} onChange={e=>setAvailability(e.target.value)}><option value="ALL">All availability</option>{options('availability_status').map(x=><option key={x} value={x}>{x.replaceAll('_',' ')}</option>)}</select>
+     </label>
+     <label htmlFor="map-freshness">Telemetry freshness
+      <select id="map-freshness" value={freshness} onChange={e=>setFreshness(e.target.value)}><option value="ALL">Any freshness</option><option value="ONLINE">Online</option><option value="STALE">Stale</option><option value="OFFLINE">Offline</option></select>
+     </label>
+    </div>
+    <label className="map-visibility"><input type="checkbox" checked={visible} onChange={e=>setVisible(e.target.checked)}/> Show vehicle markers</label>
+    <section className="map-snapshot" aria-labelledby="map-snapshot-title">
+     <h3 id="map-snapshot-title">Fleet snapshot</h3>
+     <dl>
+      <dt>Registered assets</dt><dd>{vehicles.length}</dd>
+      <dt>Visible on map</dt><dd>{positions.length}</dd>
+      <dt>Stale / offline</dt><dd>{vehicles.filter(v=>v.freshness==='STALE'||v.freshness==='OFFLINE'||(!v.freshness&&(!v.last_telemetry_at||Date.now()-new Date(v.last_telemetry_at).getTime()>60000))).length}</dd>
+      <dt>Low energy · 20% or less</dt><dd>{vehicles.filter(v=>(v.energy_percent??100)<=20).length}</dd>
+     </dl>
+    </section>
+    <details className="map-vehicle-list">
+     <summary>Vehicle list <span>{positions.length}</span></summary>
+     <div className="map-vehicle-list-items">
+      {filtered.slice(0,30).map(v=><button key={v.id} type="button" aria-pressed={selected?.id===v.id} onClick={()=>void select(v)}><strong>{v.fleet_number}</strong><span>{(v.freshness??v.operational_status).replaceAll('_',' ')}</span><small>{v.location_name??v.location_code??'Location not mapped'} · {v.speed_kph??0} km/h</small></button>)}
+      {filtered.length>30&&<p>Showing 30 of {filtered.length}. Search by fleet number to narrow the list.</p>}
+      {filtered.length===0&&<p>No vehicles match the current filters.</p>}
+     </div>
+    </details>
+    <p className="map-help map-refresh-help">Positions refresh automatically every 5 seconds.</p>
+   </aside>
+   <section className="map-canvas-panel" aria-label="Fleet map">
+    <header className="map-canvas-toolbar">
+     <div>
+      <p className="map-live-title"><span className="map-live-dot" aria-hidden="true"/>{provider==='Loading'?'Connecting to map…':'Live vehicle positions'}</p>
+      <p className="map-refresh-status" role="status" aria-live="polite">{positions.length} of {vehicles.length} registered assets shown</p>
+     </div>
+     <div className="map-legend" aria-label="Vehicle status legend">
+      <span><i className="legend-online"/>Online</span><span><i className="legend-stale"/>Stale</span><span><i className="legend-fault"/>Fault</span><span><i className="legend-offline"/>Offline</span>
+     </div>
+    </header>
+    {!error&&vehicles.length>0&&positions.length===0&&<div className="map-empty-state" role="status">No vehicles match these filters. Reset filters or choose another status.</div>}
+    {!error&&vehicles.length===0&&provider!=='Loading'&&<div className="map-empty-state" role="status">No positioned vehicles are available yet. The map will update when telemetry arrives.</div>}
+    <div ref={element} className="operational-map" role="region" aria-label="Interactive map showing filtered fleet positions" tabIndex={0}/>
+    <p className="map-sr-only">Use the map zoom controls to explore. Select a vehicle marker to view its telemetry and actions.</p>
+   </section>
+   {selected&&<AssetDrawer vehicle={selected} telemetry={telemetry} route={routeInfo} busy={actionBusy} message={actionMessage} dispatch={dispatch} close={()=>{setSelected(undefined);setTelemetry(undefined);handle.current?.setTrail([])}}/>}
+  </div>
+ </>
 }
 
 function AssetDrawer({vehicle:v,telemetry:t,route,busy,message,dispatch,close}:{vehicle:Vehicle;telemetry?:Telemetry;route?:RouteInfo;busy:boolean;message:string;dispatch:(kind:'evaluate'|'fueling'|'charging')=>void;close:()=>void}){

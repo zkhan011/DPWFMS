@@ -207,8 +207,8 @@ public class WorkspaceController {
     List<Map<String, Object>> configurations = plantId == null
         ? jdbc.queryForList("SELECT id,plant_id,provider,default_latitude,default_longitude,default_zoom,tile_url,style_url,visible_layers::text AS visible_layers,enabled,version FROM map_configurations WHERE enabled ORDER BY plant_id NULLS LAST LIMIT 1")
         : jdbc.queryForList("SELECT id,plant_id,provider,default_latitude,default_longitude,default_zoom,tile_url,style_url,visible_layers::text AS visible_layers,enabled,version FROM map_configurations WHERE enabled AND (plant_id=? OR plant_id IS NULL) ORDER BY plant_id NULLS LAST LIMIT 1", plantId);
-    return configurations.isEmpty() ? Map.of("provider", "offline", "default_latitude", 24.9857,
-        "default_longitude", 55.0273, "default_zoom", 12, "tile_url", "/tiles/{z}/{x}/{y}.png")
+    return configurations.isEmpty() ? Map.of("provider", "pmtiles", "default_latitude", 24.9857,
+        "default_longitude", 55.0273, "default_zoom", 12, "style_url", "/api/maps/style.json")
         : configurations.getFirst();
   }
 
