@@ -64,7 +64,7 @@ function loadGoogle(key:string):Promise<void>{if(googlePromise)return googleProm
 function escapeHtml(value:string){return value.replace(/[&<>'"]/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[character]!))}
 
 
-import { addProtocol, Map as MapLibreMap, Popup } from 'maplibre-gl';
+import { addProtocol, GeoJSONSource, LngLatBounds, Map as MapLibreMap, MapLayerMouseEvent, Popup } from 'maplibre-gl';
 import { Protocol as PmtilesProtocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
@@ -103,7 +103,7 @@ class PmtilesProvider implements MapProvider {
       map.once('error', event => reject(event.error ?? new Error('PMTiles map style could not be loaded')));
     });
 
-    const emptyCollection = () => ({ type: 'FeatureCollection' as const, features: [] as GeoFeature[] });
+    const emptyCollection = () => ({ type: 'FeatureCollection' as const, features: [] as never[] });
     map.addSource(vehicleSourceId, { type: 'geojson', data: emptyCollection(), cluster: true, clusterRadius: 48, clusterMaxZoom: 15 });
     map.addLayer({ id: 'dpwfms-vehicle-clusters', type: 'circle', source: vehicleSourceId, filter: ['has', 'point_count'], paint: { 'circle-color': '#183c64', 'circle-radius': ['step', ['get', 'point_count'], 18, 10, 22, 50, 28], 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 } });
     map.addLayer({ id: 'dpwfms-vehicle-cluster-count', type: 'symbol', source: vehicleSourceId, filter: ['has', 'point_count'], layout: { 'text-field': ['get', 'point_count_abbreviated'], 'text-size': 12 }, paint: { 'text-color': '#ffffff' } });
@@ -114,7 +114,7 @@ class PmtilesProvider implements MapProvider {
     if (context) {
       context.fillStyle = '#ffffff';
       context.beginPath(); context.moveTo(16, 2); context.lineTo(28, 29); context.lineTo(16, 23); context.lineTo(4, 29); context.closePath(); context.fill();
-      map.addImage('dpwfms-vehicle-arrow', arrow, { sdf: true });
+      map.addImage('dpwfms-vehicle-arrow', context.getImageData(0, 0, 32, 32), { sdf: true });
     }
     map.addLayer({ id: 'dpwfms-vehicle-halo', type: 'circle', source: vehicleSourceId, filter: ['!', ['has', 'point_count']], paint: { 'circle-radius': 10, 'circle-color': ['get', 'markerColor'], 'circle-opacity': 0.22 } });
     map.addLayer({ id: 'dpwfms-vehicle-symbols', type: 'symbol', source: vehicleSourceId, filter: ['!', ['has', 'point_count']], layout: { 'icon-image': 'dpwfms-vehicle-arrow', 'icon-size': 0.7, 'icon-rotate': ['get', 'heading'], 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true, 'text-field': ['get', 'name'], 'text-size': 11, 'text-offset': [0, 1.4], 'text-anchor': 'top', 'text-allow-overlap': false }, paint: { 'icon-color': ['get', 'markerColor'], 'text-color': '#172b3a', 'text-halo-color': '#ffffff', 'text-halo-width': 1.2 } });
@@ -135,7 +135,7 @@ class PmtilesProvider implements MapProvider {
     let popup: Popup | undefined;
     const byName = new Map<string, MapVehicle>();
     const setSourceData = (id: string, data: unknown) => {
-      const source = map.getSource(id) as maplibregl.GeoJSONSource | undefined;
+      const source = map.getSource(id) as GeoJSONSource | undefined;
       source?.setData(data as never);
     };
     const renderVehicles = (vehicles: MapVehicle[]) => {
@@ -147,7 +147,7 @@ class PmtilesProvider implements MapProvider {
       }) };
       setSourceData(vehicleSourceId, data);
     };
-    const clickVehicle = (event: maplibregl.MapLayerMouseEvent) => {
+    const clickVehicle = (event: MapLayerMouseEvent) => {
       const feature = event.features?.[0];
       if (!feature) return;
       const name = String(feature.properties?.name ?? '');
@@ -205,7 +205,7 @@ class PmtilesProvider implements MapProvider {
         renderVehicles(vehicles);
         if (initialFit && visible && vehicles.length) {
           if (vehicles.length === 1) map.easeTo({ center: [vehicles[0].longitude, vehicles[0].latitude], zoom: Math.max(configuration.default_zoom, 14) });
-          else map.fitBounds(new MapLibreMap.LngLatBounds(vehicles.map(vehicle => [vehicle.longitude, vehicle.latitude] as [number, number])), { padding: 56, maxZoom: configuration.default_zoom });
+          else map.fitBounds(new LngLatBounds(vehicles.map(vehicle => [vehicle.longitude, vehicle.latitude] as [number, number])), { padding: 56, maxZoom: configuration.default_zoom });
           initialFit = false;
         }
       },
