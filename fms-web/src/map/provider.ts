@@ -64,14 +64,14 @@ function loadGoogle(key:string):Promise<void>{if(googlePromise)return googleProm
 function escapeHtml(value:string){return value.replace(/[&<>'"]/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[character]!))}
 
 
-import maplibregl, { Map as MapLibreMap, Popup } from 'maplibre-gl';
+import { addProtocol, Map as MapLibreMap, Popup } from 'maplibre-gl';
 import { Protocol as PmtilesProtocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 let pmtilesProtocol: PmtilesProtocol | undefined;
 function installPmtilesProtocol() {
   if (!pmtilesProtocol) pmtilesProtocol = new PmtilesProtocol();
-  try { maplibregl.addProtocol('pmtiles', pmtilesProtocol.tile); } catch { /* already registered by another map instance */ }
+  try { addProtocol('pmtiles', pmtilesProtocol.tile); } catch { /* already registered by another map instance */ }
 }
 
 type GeoFeature = { type: 'Feature'; geometry: { type: string; coordinates: unknown }; properties: Record<string, unknown> };
@@ -86,7 +86,7 @@ class PmtilesProvider implements MapProvider {
     const styleUrl = configuration.style_url || import.meta.env.VITE_PMTILES_STYLE_URL || import.meta.env.VITE_OFFLINE_STYLE_URL || '/maps/style.json';
     installPmtilesProtocol();
     const styleBase = new URL('.', new URL(styleUrl, window.location.href)).href;
-    const map = new maplibregl.Map({
+    const map = new MapLibreMap({
       container: element,
       style: styleUrl,
       center: [configuration.default_longitude, configuration.default_latitude],
@@ -121,7 +121,7 @@ class PmtilesProvider implements MapProvider {
 
     map.addSource(operationsSourceId, { type: 'geojson', data: emptyCollection() });
     map.addLayer({ id: 'dpwfms-operation-fills', type: 'fill', source: operationsSourceId, filter: ['in', ['get', 'shape'], ['literal', ['zone', 'geofence']]], paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.1 } });
-    map.addLayer({ id: 'dpwfms-operation-lines', type: 'line', source: operationsSourceId, filter: ['in', ['get', 'shape'], ['literal', ['zone', 'geofence']]], paint: { 'line-color': ['get', 'color'], 'line-width': 2, 'line-dasharray': ['case', ['get', 'restricted'], ['literal', [2, 2]], ['literal', [1, 0]]] } });
+    map.addLayer({ id: 'dpwfms-operation-lines', type: 'line', source: operationsSourceId, filter: ['in', ['get', 'shape'], ['literal', ['zone', 'geofence']]], paint: { 'line-color': ['get', 'color'], 'line-width': 2, 'line-dasharray': [2, 2] } });
     map.addLayer({ id: 'dpwfms-operation-points', type: 'circle', source: operationsSourceId, filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 7, 'circle-color': ['get', 'color'], 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 1.5 } });
     map.addLayer({ id: 'dpwfms-operation-labels', type: 'symbol', source: operationsSourceId, filter: ['==', ['geometry-type'], 'Point'], layout: { 'text-field': ['get', 'label'], 'text-size': 10, 'text-offset': [0, 1.2], 'text-anchor': 'top' }, paint: { 'text-color': '#183247', 'text-halo-color': '#ffffff', 'text-halo-width': 1.2 } });
     map.addSource(trailSourceId, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
@@ -165,7 +165,7 @@ class PmtilesProvider implements MapProvider {
       content.append(position);
       const link = document.createElement('a'); link.href = '#/telemetry'; link.textContent = 'Fleet telemetry details'; content.append(link);
       popup?.remove();
-      popup = new maplibregl.Popup({ closeButton: true, offset: 16 }).setLngLat(event.lngLat).setDOMContent(content).addTo(map);
+      popup = new Popup({ closeButton: true, offset: 16 }).setLngLat(event.lngLat).setDOMContent(content).addTo(map);
       vehicle.onSelect?.();
     };
     map.on('click', 'dpwfms-vehicle-symbols', clickVehicle);
@@ -205,7 +205,7 @@ class PmtilesProvider implements MapProvider {
         renderVehicles(vehicles);
         if (initialFit && visible && vehicles.length) {
           if (vehicles.length === 1) map.easeTo({ center: [vehicles[0].longitude, vehicles[0].latitude], zoom: Math.max(configuration.default_zoom, 14) });
-          else map.fitBounds(new maplibregl.LngLatBounds(vehicles.map(vehicle => [vehicle.longitude, vehicle.latitude])), { padding: 56, maxZoom: configuration.default_zoom });
+          else map.fitBounds(new MapLibreMap.LngLatBounds(vehicles.map(vehicle => [vehicle.longitude, vehicle.latitude] as [number, number])), { padding: 56, maxZoom: configuration.default_zoom });
           initialFit = false;
         }
       },
