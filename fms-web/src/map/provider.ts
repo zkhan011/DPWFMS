@@ -64,7 +64,7 @@ function loadGoogle(key:string):Promise<void>{if(googlePromise)return googleProm
 function escapeHtml(value:string){return value.replace(/[&<>'"]/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[character]!))}
 
 
-import type { GeoJSONSource, MapLayerMouseEvent } from 'maplibre-gl';
+import type { GeoJSONSource, MapLayerMouseEvent, Popup as MapPopup } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 type GeoFeature = { type: 'Feature'; geometry: { type: string; coordinates: unknown }; properties: Record<string, unknown> };
@@ -130,7 +130,7 @@ class PmtilesProvider implements MapProvider {
     let currentVehicles: MapVehicle[] = [];
     let visible = true;
     let initialFit = true;
-    let popup: Popup | undefined;
+    let popup: MapPopup | undefined;
     const byName = new Map<string, MapVehicle>();
     const setSourceData = (id: string, data: unknown) => {
       const source = map.getSource(id) as GeoJSONSource | undefined;
