@@ -17,7 +17,7 @@ public class MapAssetsConfiguration implements WebMvcConfigurer {
   private final String fileLocation;
 
   public MapAssetsConfiguration(
-      @Value("${dpwfms.map.assets-directory:${user.dir}/maps}") String assetsDirectory) {
+      @Value("${dpwfms.map.assets-directory:${user.dir}/map-assets}") String assetsDirectory) {
     String location = Path.of(assetsDirectory).toAbsolutePath().normalize().toUri().toString();
     this.fileLocation = location.endsWith("/") ? location : location + "/";
   }
