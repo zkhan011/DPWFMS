@@ -52,3 +52,15 @@
 @media(max-width:760px){.map-workspace{display:grid;grid-template-columns:minmax(0,1fr);height:auto;min-height:0}.map-workspace .map-controls{display:block}.map-canvas-panel{height:68vh;min-height:460px}.map-canvas-toolbar{align-items:flex-start;flex-direction:column}.map-legend{justify-content:flex-start}}
 @media(max-width:430px){.map-workspace .map-controls{padding:14px}.map-canvas-panel{height:62vh;min-height:410px}.map-legend{gap:8px}.map-legend span{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.map-workspace *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+
+.map-vehicle-list{margin-top:15px;border:1px solid #d8e3eb;border-radius:10px;background:#fff}
+.map-vehicle-list summary{display:flex;align-items:center;justify-content:space-between;min-height:46px;padding:10px 12px;color:#243e52;cursor:pointer;font-size:14px;font-weight:800}
+.map-vehicle-list summary span{display:grid;min-width:26px;height:26px;place-items:center;border-radius:20px;background:#e8f2f8;color:#165c8b}
+.map-vehicle-list-items{display:grid;max-height:280px;gap:5px;overflow:auto;padding:0 8px 8px}
+.map-vehicle-list-items button{display:grid;grid-template-columns:1fr auto;gap:3px 10px;width:100%;padding:9px;border:1px solid transparent;border-radius:7px;background:#f5f8fa;color:#253e52;text-align:left}
+.map-vehicle-list-items button:hover,.map-vehicle-list-items button[aria-pressed=true]{border-color:#6da9ca;background:#eaf5fa}
+.map-vehicle-list-items button:focus-visible{outline:3px solid #086fb5;outline-offset:2px}
+.map-vehicle-list-items strong{font-size:13px}
+.map-vehicle-list-items span{color:#405d72;font-size:12px}
+.map-vehicle-list-items small,.map-vehicle-list-items p{grid-column:1/-1;color:#52697c;font-size:12px;line-height:1.4}
