@@ -174,9 +174,9 @@ class PmtilesProvider implements MapProvider {
       const clusterId = feature?.properties?.cluster_id;
       if (clusterId == null) return;
       const source = map.getSource(vehicleSourceId) as GeoJSONSource;
-      source.getClusterExpansionZoom(Number(clusterId), (error, zoom) => {
-        if (!error && zoom != null && feature?.geometry.type === 'Point') map.easeTo({ center: feature.geometry.coordinates as [number, number], zoom });
-      });
+      void source.getClusterExpansionZoom(Number(clusterId)).then(zoom => {
+        if (zoom != null && feature?.geometry.type === 'Point') map.easeTo({ center: feature.geometry.coordinates as [number, number], zoom });
+      }).catch(() => {});
     });
     map.on('mouseenter', 'dpwfms-vehicle-symbols', () => { map.getCanvas().style.cursor = 'pointer'; });
     map.on('mouseleave', 'dpwfms-vehicle-symbols', () => { map.getCanvas().style.cursor = ''; });
