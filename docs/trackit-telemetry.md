@@ -50,6 +50,12 @@ curl -u "$TRACKIT_USER:$TRACKIT_PASSWORD" \
   http://localhost:8080/api/v1/integrations/trackit/telemetry/batch
 ```
 
+For the converted Terberg YT 222 sample batch, use
+[`docs/examples/trackit-terberg-converted-batch.json`](examples/trackit-terberg-converted-batch.json).
+It retains the source availability flags and measurements, with unavailable or absent values left
+null; vehicle/equipment/fuel classifications and terminal names are sample mappings and should be
+confirmed against the site asset and location master data before production use.
+
 A syntactically valid array returns HTTP 200 with per-index `ACCEPTED`, `REJECTED`, `DUPLICATE`,
 or `OUT_OF_ORDER` results. Invalid JSON and non-array batch payloads return HTTP 400. Rejected
 items do not roll back valid siblings. Error entries contain the batch index and available
