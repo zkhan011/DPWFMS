@@ -1,7 +1,7 @@
 package com.dpworld.fms.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -45,7 +45,7 @@ class TrackItRabbitTelemetryBridgeTest {
     assertEquals("DIESEL", result.path("FuelType").asText());
     assertEquals("T1", result.path("Location").path("LocationType").asText());
     assertEquals("Terminal 1", result.path("Location").path("LocationName").asText());
-    assertNull(result.get("FuelLevelPercent").isNull() ? null : result.get("FuelLevelPercent"));
+    assertTrue(result.has("FuelLevelPercent") && result.get("FuelLevelPercent").isNull());
     assertEquals("TT-00-1000-PL", result.path("AssetID").asText());
     assertEquals(0.0, result.path("Speed").asDouble());
     assertEquals(0, result.path("CANParameters").size());
@@ -66,12 +66,8 @@ class TrackItRabbitTelemetryBridgeTest {
     verify(rabbit).send(eq("dpwfms.business.v1"), eq("telemetry.asset.position.v1"), published.capture());
     JsonNode result = json.readTree(published.getValue().getBody()).get(0);
     assertEquals("ELECTRIC", result.path("VehicleType").asText());
-    assertTrueNull(result.get("FuelType"));
+    assertTrue(result.has("FuelType") && result.get("FuelType").isNull());
     assertEquals(0, result.path("CANParameters").size());
-  }
-
-  private static void assertTrueNull(JsonNode node) {
-    org.junit.jupiter.api.Assertions.assertTrue(node != null && node.isNull());
   }
 
   private static Message message(String body) {
