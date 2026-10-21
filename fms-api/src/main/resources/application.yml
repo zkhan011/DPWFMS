@@ -14,10 +14,11 @@ spring:
     port: ${REDIS_PORT:6379}
     password: ${REDIS_PASSWORD:}
   rabbitmq:
-    host: ${RABBITMQ_HOST}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USER}
-    password: ${RABBITMQ_PASSWORD}
+    host: 172.20.14.13
+    port: 5671
+    username: admin
+    password: CHANGE_ME_LOCALLY
+    ssl.enabled: false
     publisher-confirm-type: correlated
     publisher-returns: true
     template.mandatory: true
@@ -45,13 +46,13 @@ trackit:
     can-metadata-json: '${TRACKIT_CAN_METADATA_JSON:{}}'
     alert-low-battery-voltage: ${TRACKIT_ALERT_LOW_BATTERY_VOLTAGE:}
     rabbit-bridge:
-      enabled: ${TRACKIT_TELEMETRY_RABBIT_BRIDGE_ENABLED:false}
-      input-queue: ${TRACKIT_TELEMETRY_RABBIT_INPUT_QUEUE:tenant51.telemetry}
-      output-exchange: ${TRACKIT_TELEMETRY_RABBIT_OUTPUT_EXCHANGE:dpwfms.business.v1}
-      output-routing-key: ${TRACKIT_TELEMETRY_RABBIT_OUTPUT_ROUTING_KEY:telemetry.asset.position.v1}
-      default-vehicle-type: ${TRACKIT_DEFAULT_VEHICLE_TYPE:FUEL}
-      equipment-type: ${TRACKIT_DEFAULT_EQUIPMENT_TYPE:TRACTOR}
-      fuel-type: ${TRACKIT_DEFAULT_FUEL_TYPE:DIESEL}
+      enabled: true
+      input-queue: tenant51.telemetry
+      output-exchange: dpwfms.business.v1
+      output-routing-key: telemetry.asset.position.v1
+      default-vehicle-type: FUEL
+      equipment-type: TRACTOR
+      fuel-type: DIESEL
 dpwfms:
   automation:
     evaluation-interval-ms: ${AUTOMATION_EVALUATION_INTERVAL_MS:30000}
