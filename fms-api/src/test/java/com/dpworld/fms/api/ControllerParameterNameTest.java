@@ -3,6 +3,7 @@ package com.dpworld.fms.api;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.lang.reflect.Parameter;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,8 +16,9 @@ class ControllerParameterNameTest {
         TelemetryController.class, TrackItTelemetryController.class,
         UserAdministrationController.class, WorkspaceController.class);
 
-    controllers.stream().flatMap(controller -> List.of(controller.getDeclaredMethods()).stream())
-        .flatMap(method -> List.of(method.getParameters()).stream())
+    controllers.stream()
+        .flatMap(controller -> Arrays.stream(controller.getDeclaredMethods()))
+        .flatMap(method -> Arrays.stream(method.getParameters()))
         .forEach(this::assertExplicitSpringName);
   }
 
