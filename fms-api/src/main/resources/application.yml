@@ -41,6 +41,14 @@ trackit:
     fuel-consumption-rate-unit: ${TRACKIT_FUEL_RATE_UNIT:}
     can-metadata-json: '${TRACKIT_CAN_METADATA_JSON:{}}'
     alert-low-battery-voltage: ${TRACKIT_ALERT_LOW_BATTERY_VOLTAGE:}
+    rabbit-bridge:
+      enabled: ${TRACKIT_TELEMETRY_RABBIT_BRIDGE_ENABLED:false}
+      input-queue: ${TRACKIT_TELEMETRY_RABBIT_INPUT_QUEUE:tenant51.telemetry}
+      output-exchange: ${TRACKIT_TELEMETRY_RABBIT_OUTPUT_EXCHANGE:dpwfms.business.v1}
+      output-routing-key: ${TRACKIT_TELEMETRY_RABBIT_OUTPUT_ROUTING_KEY:telemetry.asset.position.v1}
+      default-vehicle-type: ${TRACKIT_DEFAULT_VEHICLE_TYPE:FUEL}
+      equipment-type: ${TRACKIT_DEFAULT_EQUIPMENT_TYPE:TRACTOR}
+      fuel-type: ${TRACKIT_DEFAULT_FUEL_TYPE:DIESEL}
 dpwfms:
   automation:
     evaluation-interval-ms: ${AUTOMATION_EVALUATION_INTERVAL_MS:30000}
