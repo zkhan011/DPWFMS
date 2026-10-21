@@ -64,11 +64,12 @@ java -jar fms-api/target/fms-api.jar
 ```
 
 The source queue must exist and the RabbitMQ user needs consume permission on
-that queue plus publish permission on the output exchange. The classification
-defaults and the location aliases (Operation/Engineering T1, T2, and T3) are
-configurable or should be adjusted to match site master data. The bridge
-preserves source measurements and availability flags and leaves missing
-derived fields null.
+that queue plus publish permission on the output exchange. The Java bridge waits
+for the broker's publisher confirmation and checks for unroutable returns before
+the source listener acknowledges a message. The classification defaults and the
+location aliases (Operation/Engineering T1, T2, and T3) are configurable or
+should be adjusted to match site master data. The bridge preserves source
+measurements and availability flags and leaves missing derived fields null.
 
 Start the API first so it declares the topology. Then simulate all operational
 scenarios through RabbitMQ (no direct telemetry REST calls):
