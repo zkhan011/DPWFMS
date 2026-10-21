@@ -1,0 +1,722 @@
+[
+  {
+    "AssetID": "TT-00-1000-PL",
+    "AssetNumber": "TT-00-1000-PL",
+    "Make": "Terberg",
+    "Model": "YT 222",
+    "VehicleType": "FUEL",
+    "EquipmentType": "TRACTOR",
+    "FuelType": "DIESEL",
+    "Timestamp": "2026-10-21T09:01:41Z",
+    "LastUpdatedTime": "2026-10-21T05:01:54Z",
+    "Latitude": 24.98471,
+    "Longitude": 55.0629366,
+    "Speed": 0,
+    "BatteryVoltage": 25.478,
+    "BatteryLevelPercent": null,
+    "LowBattery": null,
+    "FuelLevelPercent": null,
+    "LowFuel": null,
+    "FuelConsumptionRate": null,
+    "TotalFuelUsed": null,
+    "EngineHours": null,
+    "Location": {
+      "LocationMappingStatus": "InsideDefinedLocation",
+      "LocationType": "T1",
+      "LocationName": "Terminal 1",
+      "LocationCode": "T1"
+    },
+    "DataAvailabilityFlag": {
+      "GPSAvailable": true,
+      "FuelDataAvailable": false,
+      "EngineDataAvailable": false,
+      "CANDataAvailable": false
+    },
+    "CANParameters": []
+  },
+  {
+    "AssetID": "TT-00-1003-PL",
+    "AssetNumber": "TT-00-1003-PL",
+    "Make": "Terberg",
+    "Model": "YT 222",
+    "VehicleType": "FUEL",
+    "EquipmentType": "TRACTOR",
+    "FuelType": "DIESEL",
+    "Timestamp": "2026-10-21T09:00:03Z",
+    "LastUpdatedTime": "2026-10-21T05:00:31Z",
+    "Latitude": 25.0039266,
+    "Longitude": 55.0754616,
+    "Speed": 0,
+    "BatteryVoltage": 23.736,
+    "BatteryLevelPercent": null,
+    "LowBattery": null,
+    "FuelLevelPercent": null,
+    "LowFuel": null,
+    "FuelConsumptionRate": 0.75,
+    "TotalFuelUsed": null,
+    "EngineHours": null,
+    "Location": {
+      "LocationMappingStatus": "InsideDefinedLocation",
+      "LocationType": "T1",
+      "LocationName": "Terminal 1",
+      "LocationCode": "T1"
+    },
+    "DataAvailabilityFlag": {
+      "GPSAvailable": true,
+      "FuelDataAvailable": false,
+      "EngineDataAvailable": false,
+      "CANDataAvailable": false
+    },
+    "CANParameters": [
+      {
+        "Name": "Engine Speed",
+        "Value": 697
+      },
+      {
+        "Name": "Boost Pressure",
+        "Value": 510
+      },
+      {
+        "Name": "Engine Percent Load at Current Speed",
+        "Value": 12
+      },
+      {
+        "Name": "Engine Coolant Temperature",
+        "Value": 40
+      },
+      {
+        "Name": "Engine Fuel Rate",
+        "Value": 0.75
+      },
+      {
+        "Name": "Engine Instantaneous Fuel Economy",
+        "Value": 0
+      },
+      {
+        "Name": "Input Shaft Speed",
+        "Value": 674
+      },
+      {
+        "Name": "Output Shaft Speed",
+        "Value": 0
+      },
+      {
+        "Name": "Current Gear",
+        "Value": 0
+      },
+      {
+        "Name": "Selected / Requested Gear",
+        "Value": 0
+      },
+      {
+        "Name": "Transmission Oil Temperature",
+        "Value": 51
+      },
+      {
+        "Name": "Wheel Based Speed",
+        "Value": 0
+      },
+      {
+        "Name": "Trip Odometer",
+        "Value": 1.376
+      },
+      {
+        "Name": "Total Odometer",
+        "Value": 4.447
+      }
+    ]
+  },
+  {
+    "AssetID": "TT-00-1005-PL",
+    "AssetNumber": "TT-00-1005-PL",
+    "Make": "Terberg",
+    "Model": "YT 222",
+    "VehicleType": "FUEL",
+    "EquipmentType": "TRACTOR",
+    "FuelType": "DIESEL",
+    "Timestamp": "2026-10-21T09:01:32Z",
+    "LastUpdatedTime": "2026-10-21T05:02:01Z",
+    "Latitude": 25.0054,
+    "Longitude": 55.08339,
+    "Speed": 0,
+    "BatteryVoltage": 25.653,
+    "BatteryLevelPercent": null,
+    "LowBattery": null,
+    "FuelLevelPercent": null,
+    "LowFuel": null,
+    "FuelConsumptionRate": 0.75,
+    "TotalFuelUsed": null,
+    "EngineHours": null,
+    "Location": {
+      "LocationMappingStatus": "InsideDefinedLocation",
+      "LocationType": "T1",
+      "LocationName": "Terminal 1",
+      "LocationCode": "T1"
+    },
+    "DataAvailabilityFlag": {
+      "GPSAvailable": true,
+      "FuelDataAvailable": false,
+      "EngineDataAvailable": false,
+      "CANDataAvailable": false
+    },
+    "CANParameters": [
+      {
+        "Name": "Engine Speed",
+        "Value": 701
+      },
+      {
+        "Name": "Boost Pressure",
+        "Value": 510
+      },
+      {
+        "Name": "Engine Percent Load at Current Speed",
+        "Value": 11
+      },
+      {
+        "Name": "Engine Coolant Temperature",
+        "Value": 24
+      },
+      {
+        "Name": "Engine Fuel Rate",
+        "Value": 0.75
+      },
+      {
+        "Name": "Engine Instantaneous Fuel Economy",
+        "Value": 0
+      },
+      {
+        "Name": "Input Shaft Speed",
+        "Value": 681
+      },
+      {
+        "Name": "Output Shaft Speed",
+        "Value": 0
+      },
+      {
+        "Name": "Current Gear",
+        "Value": 0
+      },
+      {
+        "Name": "Selected / Requested Gear",
+        "Value": 0
+      },
+      {
+        "Name": "Transmission Oil Temperature",
+        "Value": 51
+      },
+      {
+        "Name": "Wheel Based Speed",
+        "Value": 0
+      },
+      {
+        "Name": "Trip Odometer",
+        "Value": 0
+      },
+      {
+        "Name": "Total Odometer",
+        "Value": 0.729
+      }
+    ]
+  },
+  {
+    "AssetID": "TT-00-1025-PL",
+    "AssetNumber": "TT-00-1025-PL",
+    "Make": "Terberg",
+    "Model": "YT 222",
+    "VehicleType": "FUEL",
+    "EquipmentType": "TRACTOR",
+    "FuelType": "DIESEL",
+    "Timestamp": "2026-10-21T09:00:28Z",
+    "LastUpdatedTime": "2026-10-21T05:00:53Z",
+    "Latitude": 24.9955816,
+    "Longitude": 55.0484583,
+    "Speed": 0,
+    "BatteryVoltage": 24.607,
+    "BatteryLevelPercent": null,
+    "LowBattery": null,
+    "FuelLevelPercent": null,
+    "LowFuel": null,
+    "FuelConsumptionRate": 0.8,
+    "TotalFuelUsed": null,
+    "EngineHours": 46968,
+    "Location": {
+      "LocationMappingStatus": "InsideDefinedLocation",
+      "LocationType": "T3",
+      "LocationName": "Terminal 3",
+      "LocationCode": "T3"
+    },
+    "DataAvailabilityFlag": {
+      "GPSAvailable": true,
+      "FuelDataAvailable": false,
+      "EngineDataAvailable": false,
+      "CANDataAvailable": false
+    },
+    "CANParameters": [
+      {
+        "Name": "Engine Speed",
+        "Value": 722
+      },
+      {
+        "Name": "Boost Pressure",
+        "Value": 510
+      },
+      {
+        "Name": "Engine Percent Load at Current Speed",
+        "Value": 15
+      },
+      {
+        "Name": "Engine Coolant Temperature",
+        "Value": 8
+      },
+      {
+        "Name": "Engine Fuel Rate",
+        "Value": 0.8
+      },
+      {
+        "Name": "Engine Instantaneous Fuel Economy",
+        "Value": 0
+      },
+      {
+        "Name": "Input Shaft Speed",
+        "Value": 695
+      },
+      {
+        "Name": "Output Shaft Speed",
+        "Value": 0
+      },
+      {
+        "Name": "Current Gear",
+        "Value": 0
+      },
+      {
+        "Name": "Selected / Requested Gear",
+        "Value": 0
+      },
+      {
+        "Name": "Transmission Oil Temperature",
+        "Value": 37
+      },
+      {
+        "Name": "Wheel Based Speed",
+        "Value": 0
+      },
+      {
+        "Name": "Trip Odometer",
+        "Value": 0.03
+      },
+      {
+        "Name": "Total Odometer",
+        "Value": 563.604
+      },
+      {
+        "Name": "Engine Total Hours of Operations",
+        "Value": 46968
+      }
+    ]
+  },
+  {
+    "AssetID": "TT-00-1029-PL",
+    "AssetNumber": "TT-00-1029-PL",
+    "Make": "Terberg",
+    "Model": "YT 222",
+    "VehicleType": "FUEL",
+    "EquipmentType": "TRACTOR",
+    "FuelType": "DIESEL",
+    "Timestamp": "2026-10-21T09:00:09Z",
+    "LastUpdatedTime": "2026-10-21T05:00:35Z",
+    "Latitude": 24.9843983,
+    "Longitude": 55.0531316,
+    "Speed": 0,
+    "BatteryVoltage": 25.743,
+    "BatteryLevelPercent": null,
+    "LowBattery": null,
+    "FuelLevelPercent": null,
+    "LowFuel": null,
+    "FuelConsumptionRate": 0.55,
+    "TotalFuelUsed": 126.764,
+    "EngineHours": 48994,
+    "Location": {
+      "LocationMappingStatus": "InsideDefinedLocation",
+      "LocationType": "T3",
+      "LocationName": "Terminal 3",
+      "LocationCode": "T3"
+    },
+    "DataAvailabilityFlag": {
+      "GPSAvailable": true,
+      "FuelDataAvailable": false,
+      "EngineDataAvailable": false,
+      "CANDataAvailable": false
+    },
+    "CANParameters": [
+      {
+        "Name": "Engine Speed",
+        "Value": 699
+      },
+      {
+        "Name": "Boost Pressure",
+        "Value": 510
+      },
+      {
+        "Name": "Engine Percent Load at Current Speed",
+        "Value": 11
+      },
+      {
+        "Name": "Engine Coolant Temperature",
+        "Value": 24
+      },
+      {
+        "Name": "Engine Fuel Rate",
+        "Value": 0.55
+      },
+      {
+        "Name": "Engine Instantaneous Fuel Economy",
+        "Value": 0
+      },
+      {
+        "Name": "Input Shaft Speed",
+        "Value": 682
+      },
+      {
+        "Name": "Output Shaft Speed",
+        "Value": 0
+      },
+      {
+        "Name": "Current Gear",
+        "Value": 0
+      },
+      {
+        "Name": "Selected / Requested Gear",
+        "Value": 0
+      },
+      {
+        "Name": "Transmission Oil Temperature",
+        "Value": 57
+      },
+      {
+        "Name": "Wheel Based Speed",
+        "Value": 0
+      },
+      {
+        "Name": "Trip Odometer",
+        "Value": 1.067
+      },
+      {
+        "Name": "Total Odometer",
+        "Value": 212.083
+      },
+      {
+        "Name": "Engine Total Hours of Operations",
+        "Value": 48994
+      },
+      {
+        "Name": "Engine Total Fuel Used",
+        "Value": 126.764
+      }
+    ]
+  },
+  {
+    "AssetID": "TT-00-1032-PL",
+    "AssetNumber": "TT-00-1032-PL",
+    "Make": "Terberg",
+    "Model": "YT 222",
+    "VehicleType": "FUEL",
+    "EquipmentType": "TRACTOR",
+    "FuelType": "DIESEL",
+    "Timestamp": "2026-10-21T09:00:13Z",
+    "LastUpdatedTime": "2026-10-21T05:00:27Z",
+    "Latitude": 24.9844066,
+    "Longitude": 55.053065,
+    "Speed": 0,
+    "BatteryVoltage": 24.91,
+    "BatteryLevelPercent": null,
+    "LowBattery": null,
+    "FuelLevelPercent": null,
+    "LowFuel": null,
+    "FuelConsumptionRate": null,
+    "TotalFuelUsed": null,
+    "EngineHours": null,
+    "Location": {
+      "LocationMappingStatus": "InsideDefinedLocation",
+      "LocationType": "T3",
+      "LocationName": "Terminal 3",
+      "LocationCode": "T3"
+    },
+    "DataAvailabilityFlag": {
+      "GPSAvailable": true,
+      "FuelDataAvailable": false,
+      "EngineDataAvailable": false,
+      "CANDataAvailable": false
+    },
+    "CANParameters": []
+  },
+  {
+    "AssetID": "TT-00-1033-PL",
+    "AssetNumber": "TT-00-1033-PL",
+    "Make": "Terberg",
+    "Model": "YT 222",
+    "VehicleType": "FUEL",
+    "EquipmentType": "TRACTOR",
+    "FuelType": "DIESEL",
+    "Timestamp": "2026-10-21T09:02:07Z",
+    "LastUpdatedTime": "2026-10-21T05:02:06Z",
+    "Latitude": 24.9951,
+    "Longitude": 55.0485883,
+    "Speed": 0,
+    "BatteryVoltage": 0,
+    "BatteryLevelPercent": null,
+    "LowBattery": null,
+    "FuelLevelPercent": null,
+    "LowFuel": null,
+    "FuelConsumptionRate": 0.45,
+    "TotalFuelUsed": 126.842,
+    "EngineHours": 49516,
+    "Location": {
+      "LocationMappingStatus": "InsideDefinedLocation",
+      "LocationType": "T3",
+      "LocationName": "Terminal 3",
+      "LocationCode": "T3"
+    },
+    "DataAvailabilityFlag": {
+      "GPSAvailable": true,
+      "FuelDataAvailable": true,
+      "EngineDataAvailable": true,
+      "CANDataAvailable": true
+    },
+    "CANParameters": [
+      {
+        "Name": "Engine Speed",
+        "Value": 700
+      },
+      {
+        "Name": "Boost Pressure",
+        "Value": 510
+      },
+      {
+        "Name": "Engine Percent Load at Current Speed",
+        "Value": 7
+      },
+      {
+        "Name": "Engine Coolant Temperature",
+        "Value": 44
+      },
+      {
+        "Name": "Engine Fuel Rate",
+        "Value": 0.45
+      },
+      {
+        "Name": "Engine Instantaneous Fuel Economy",
+        "Value": 0
+      },
+      {
+        "Name": "Input Shaft Speed",
+        "Value": 684
+      },
+      {
+        "Name": "Output Shaft Speed",
+        "Value": 0
+      },
+      {
+        "Name": "Current Gear",
+        "Value": 0
+      },
+      {
+        "Name": "Selected / Requested Gear",
+        "Value": 0
+      },
+      {
+        "Name": "Wheel Based Speed",
+        "Value": 0
+      },
+      {
+        "Name": "Trip Odometer",
+        "Value": 0.736
+      },
+      {
+        "Name": "Total Odometer",
+        "Value": 450.321
+      },
+      {
+        "Name": "Engine Total Hours of Operations",
+        "Value": 49516
+      },
+      {
+        "Name": "Engine Total Fuel Used",
+        "Value": 126.842
+      },
+      {
+        "Name": "Transmission Oil Temperature",
+        "Value": 67
+      }
+    ]
+  },
+  {
+    "AssetID": "TT-00-1034-PL",
+    "AssetNumber": "TT-00-1034-PL",
+    "Make": "Terberg",
+    "Model": "YT 222",
+    "VehicleType": "FUEL",
+    "EquipmentType": "TRACTOR",
+    "FuelType": "DIESEL",
+    "Timestamp": "2026-10-21T09:00:28Z",
+    "LastUpdatedTime": "2026-10-21T05:00:31Z",
+    "Latitude": 24.9854933,
+    "Longitude": 55.0530083,
+    "Speed": 11,
+    "BatteryVoltage": 27.614,
+    "BatteryLevelPercent": null,
+    "LowBattery": null,
+    "FuelLevelPercent": null,
+    "LowFuel": null,
+    "FuelConsumptionRate": 1.2,
+    "TotalFuelUsed": 123.43,
+    "EngineHours": 47299,
+    "Location": {
+      "LocationMappingStatus": "InsideDefinedLocation",
+      "LocationType": "T3",
+      "LocationName": "Terminal 3",
+      "LocationCode": "T3"
+    },
+    "DataAvailabilityFlag": {
+      "GPSAvailable": true,
+      "FuelDataAvailable": true,
+      "EngineDataAvailable": false,
+      "CANDataAvailable": true
+    },
+    "CANParameters": [
+      {
+        "Name": "Engine Speed",
+        "Value": 1112
+      },
+      {
+        "Name": "Boost Pressure",
+        "Value": 510
+      },
+      {
+        "Name": "Engine Percent Load at Current Speed",
+        "Value": 10
+      },
+      {
+        "Name": "Engine Coolant Temperature",
+        "Value": 43
+      },
+      {
+        "Name": "Engine Fuel Rate",
+        "Value": 1.2
+      },
+      {
+        "Name": "Engine Instantaneous Fuel Economy",
+        "Value": 0
+      },
+      {
+        "Name": "Input Shaft Speed",
+        "Value": 1112
+      },
+      {
+        "Name": "Output Shaft Speed",
+        "Value": 787
+      },
+      {
+        "Name": "Current Gear",
+        "Value": 3
+      },
+      {
+        "Name": "Selected / Requested Gear",
+        "Value": 3
+      },
+      {
+        "Name": "Transmission Oil Temperature",
+        "Value": 65
+      },
+      {
+        "Name": "Wheel Based Speed",
+        "Value": 11
+      },
+      {
+        "Name": "Trip Odometer",
+        "Value": 6.447
+      },
+      {
+        "Name": "Total Odometer",
+        "Value": 250.749
+      },
+      {
+        "Name": "Engine Total Hours of Operations",
+        "Value": 47299
+      },
+      {
+        "Name": "Engine Total Fuel Used",
+        "Value": 123.43
+      }
+    ]
+  },
+  {
+    "AssetID": "TT-00-1036-PL",
+    "AssetNumber": "TT-00-1036-PL",
+    "Make": "Terberg",
+    "Model": "YT 222",
+    "VehicleType": "FUEL",
+    "EquipmentType": "TRACTOR",
+    "FuelType": "DIESEL",
+    "Timestamp": "2026-10-21T09:01:07Z",
+    "LastUpdatedTime": "2026-10-21T05:01:23Z",
+    "Latitude": 24.9863783,
+    "Longitude": 55.047995,
+    "Speed": 0,
+    "BatteryVoltage": 24.594,
+    "BatteryLevelPercent": null,
+    "LowBattery": null,
+    "FuelLevelPercent": null,
+    "LowFuel": null,
+    "FuelConsumptionRate": null,
+    "TotalFuelUsed": null,
+    "EngineHours": null,
+    "Location": {
+      "LocationMappingStatus": "InsideDefinedLocation",
+      "LocationType": "T3",
+      "LocationName": "Terminal 3",
+      "LocationCode": "T3"
+    },
+    "DataAvailabilityFlag": {
+      "GPSAvailable": true,
+      "FuelDataAvailable": false,
+      "EngineDataAvailable": false,
+      "CANDataAvailable": false
+    },
+    "CANParameters": []
+  },
+  {
+    "AssetID": "TT-00-1037-PL",
+    "AssetNumber": "TT-00-1037-PL",
+    "Make": "Terberg",
+    "Model": "YT 222",
+    "VehicleType": "FUEL",
+    "EquipmentType": "TRACTOR",
+    "FuelType": "DIESEL",
+    "Timestamp": "2026-10-21T09:00:52Z",
+    "LastUpdatedTime": "2026-10-21T05:01:05Z",
+    "Latitude": 24.9831016,
+    "Longitude": 55.0537083,
+    "Speed": 0,
+    "BatteryVoltage": 23.938,
+    "BatteryLevelPercent": null,
+    "LowBattery": null,
+    "FuelLevelPercent": null,
+    "LowFuel": null,
+    "FuelConsumptionRate": null,
+    "TotalFuelUsed": null,
+    "EngineHours": null,
+    "Location": {
+      "LocationMappingStatus": "InsideDefinedLocation",
+      "LocationType": "T3",
+      "LocationName": "Terminal 3",
+      "LocationCode": "T3"
+    },
+    "DataAvailabilityFlag": {
+      "GPSAvailable": true,
+      "FuelDataAvailable": false,
+      "EngineDataAvailable": false,
+      "CANDataAvailable": false
+    },
+    "CANParameters": []
+  }
+]
