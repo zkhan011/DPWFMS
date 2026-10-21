@@ -2,7 +2,9 @@ package com.dpworld.fms.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -13,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 class TrackItRabbitTelemetryBridgeTest {
@@ -20,7 +23,7 @@ class TrackItRabbitTelemetryBridgeTest {
 
   @Test
   void convertsTrackItRecordAndPreservesSourceFields() throws Exception {
-    RabbitTemplate rabbit = mock(RabbitTemplate.class);
+    RabbitTemplate rabbit = mockConfirmedRabbit();
     TrackItRabbitTelemetryBridge bridge =
         new TrackItRabbitTelemetryBridge(json, rabbit, "dpwfms.business.v1",
             "telemetry.asset.position.v1", "FUEL", "TRACTOR", "DIESEL");
@@ -38,7 +41,8 @@ class TrackItRabbitTelemetryBridgeTest {
     bridge.forward(message(body));
 
     ArgumentCaptor<Message> published = ArgumentCaptor.forClass(Message.class);
-    verify(rabbit).send(eq("dpwfms.business.v1"), eq("telemetry.asset.position.v1"), published.capture());
+    verify(rabbit).send(eq("dpwfms.business.v1"), eq("telemetry.asset.position.v1"),
+        published.capture(), any(CorrelationData.class));
     JsonNode result = json.readTree(published.getValue().getBody());
     assertEquals("FUEL", result.path("VehicleType").asText());
     assertEquals("TRACTOR", result.path("EquipmentType").asText());
@@ -47,13 +51,13 @@ class TrackItRabbitTelemetryBridgeTest {
     assertEquals("Terminal 1", result.path("Location").path("LocationName").asText());
     assertTrue(result.has("FuelLevelPercent") && result.get("FuelLevelPercent").isNull());
     assertEquals("TT-00-1000-PL", result.path("AssetID").asText());
-    assertEquals(0.0, result.path("Speed").asDouble());
+    assertEquals(0.0, result.path("Speed").asDouble(), 0.0001);
     assertEquals(0, result.path("CANParameters").size());
   }
 
   @Test
   void convertsBatchAndPreservesElectricClassification() throws Exception {
-    RabbitTemplate rabbit = mock(RabbitTemplate.class);
+    RabbitTemplate rabbit = mockConfirmedRabbit();
     TrackItRabbitTelemetryBridge bridge =
         new TrackItRabbitTelemetryBridge(json, rabbit, "dpwfms.business.v1",
             "telemetry.asset.position.v1", "FUEL", "TRACTOR", "DIESEL");
@@ -63,11 +67,23 @@ class TrackItRabbitTelemetryBridgeTest {
         """));
 
     ArgumentCaptor<Message> published = ArgumentCaptor.forClass(Message.class);
-    verify(rabbit).send(eq("dpwfms.business.v1"), eq("telemetry.asset.position.v1"), published.capture());
+    verify(rabbit).send(eq("dpwfms.business.v1"), eq("telemetry.asset.position.v1"),
+        published.capture(), any(CorrelationData.class));
     JsonNode result = json.readTree(published.getValue().getBody()).get(0);
     assertEquals("ELECTRIC", result.path("VehicleType").asText());
     assertTrue(result.has("FuelType") && result.get("FuelType").isNull());
     assertEquals(0, result.path("CANParameters").size());
+  }
+
+  private static RabbitTemplate mockConfirmedRabbit() {
+    RabbitTemplate rabbit = mock(RabbitTemplate.class);
+    doAnswer(invocation -> {
+      CorrelationData confirmation = invocation.getArgument(3);
+      confirmation.getFuture().complete(new CorrelationData.Confirm(true, null));
+      return null;
+    }).when(rabbit).send(any(String.class), any(String.class), any(Message.class),
+        any(CorrelationData.class));
+    return rabbit;
   }
 
   private static Message message(String body) {
