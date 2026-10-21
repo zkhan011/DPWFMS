@@ -7,10 +7,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -47,7 +50,7 @@ public class TrackItRabbitTelemetryBridge {
   @RabbitListener(
       queues = "${trackit.telemetry.rabbit-bridge.input-queue:tenant51.telemetry}",
       autoStartup = "${trackit.telemetry.rabbit-bridge.enabled:false}")
-  public void forward(Message incoming) throws IOException {
+  public void forward(Message incoming) throws Exception {
     JsonNode payload = json.readTree(incoming.getBody());
     if (payload == null || payload.isNull()) {
       throw new IllegalArgumentException("TrackIT message must not be empty");
@@ -74,7 +77,16 @@ public class TrackItRabbitTelemetryBridge {
     properties.setCorrelationId(incoming.getMessageProperties().getCorrelationId());
     properties.setHeaders(new HashMap<>(incoming.getMessageProperties().getHeaders()));
     Message outgoing = new Message(json.writeValueAsBytes(adapted), properties);
-    rabbit.send(outputExchange, outputRoutingKey, outgoing);
+
+    CorrelationData confirmation = new CorrelationData(UUID.randomUUID().toString());
+    rabbit.send(outputExchange, outputRoutingKey, outgoing, confirmation);
+    CorrelationData.Confirm result = confirmation.getFuture().get(10, TimeUnit.SECONDS);
+    if (!result.isAck()) {
+      throw new IllegalStateException("RabbitMQ rejected TrackIT publish: " + result.getReason());
+    }
+    if (confirmation.getReturned() != null) {
+      throw new IllegalStateException("TrackIT message was returned as unroutable");
+    }
   }
 
   private ObjectNode adaptRecord(JsonNode source) {
