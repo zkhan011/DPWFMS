@@ -34,45 +34,34 @@ canonical telemetry record:
 }
 ```
 
-## Optional TrackIT queue bridge
+## TrackIT queue bridge
 
-The API includes an optional Java bridge for raw TrackIT PascalCase objects or
-arrays. It consumes a source queue, adds the target vehicle/equipment/fuel
-classification and normalized location fields, and publishes the converted
-payload to the business exchange. The existing telemetry listener recognizes
-these TrackIT records and stores them through TrackIT ingestion. Existing
-canonical envelopes continue to use the original ingestion path.
+The Java bridge accepts raw TrackIT PascalCase objects or arrays from its input
+queue, adds vehicle/equipment/fuel classification and normalized location
+fields, then publishes the converted payload to the business exchange. The
+existing telemetry listener recognizes these TrackIT records and stores them
+through TrackIT ingestion. Canonical envelopes continue to use the original
+ingestion path.
 
-The bridge is disabled by default. Configure the RabbitMQ connection using the
-standard `RABBITMQ_HOST`, `RABBITMQ_PORT`, `RABBITMQ_USER`, and
-`RABBITMQ_PASSWORD` settings, then enable/configure the bridge before starting
-the API. For PowerShell:
-
-```powershell
-$env:RABBITMQ_HOST = "172.20.14.13"
-$env:RABBITMQ_PORT = "5671"
-$env:RABBITMQ_USER = "admin"
-$env:RABBITMQ_PASSWORD = "<your-password>"
-$env:TRACKIT_TELEMETRY_RABBIT_BRIDGE_ENABLED = "true"
-$env:TRACKIT_TELEMETRY_RABBIT_INPUT_QUEUE = "tenant51.telemetry"
-$env:TRACKIT_TELEMETRY_RABBIT_OUTPUT_EXCHANGE = "dpwfms.business.v1"
-$env:TRACKIT_TELEMETRY_RABBIT_OUTPUT_ROUTING_KEY = "telemetry.asset.position.v1"
-$env:TRACKIT_DEFAULT_VEHICLE_TYPE = "FUEL"
-$env:TRACKIT_DEFAULT_EQUIPMENT_TYPE = "TRACTOR"
-$env:TRACKIT_DEFAULT_FUEL_TYPE = "DIESEL"
-java -jar fms-api/target/fms-api.jar
-```
+Bridge connection and routing settings are in
+`fms-api/src/main/resources/application.yml`. Set the RabbitMQ password in
+`spring.rabbitmq.password` before running; keep the real password out of
+committed changes. The current config uses host `172.20.14.13`, port `5671`
+without TLS, user `admin`, source queue `tenant51.telemetry`, exchange
+`dpwfms.business.v1`, and routing key `telemetry.asset.position.v1`. The
+bridge is enabled in this application configuration.
 
 The source queue must exist and the RabbitMQ user needs consume permission on
-that queue plus publish permission on the output exchange. The Java bridge waits
+that queue plus publish permission on the output exchange. The bridge waits
 for the broker's publisher confirmation and checks for unroutable returns before
-the source listener acknowledges a message. The classification defaults and the
-location aliases (Operation/Engineering T1, T2, and T3) are configurable or
-should be adjusted to match site master data. The bridge preserves source
-measurements and availability flags and leaves missing derived fields null.
+the source listener acknowledges a message. Vehicle classifications are
+configured in the same YAML file. Location aliases for Operation/Engineering
+T1, T2, and T3 are converted to Terminal 1, 2, and 3; confirm these mappings
+against site master data. Source measurements and availability flags are
+preserved, and fields absent from the source are left null.
 
-Start the API first so it declares the topology. Then simulate all operational
-scenarios through RabbitMQ (no direct telemetry REST calls):
+Start the API first so it declares the internal topology. Then simulate all
+operational scenarios through RabbitMQ (no direct telemetry REST calls):
 
 ```bash
 export RABBITMQ_USER=dpwfms_app
